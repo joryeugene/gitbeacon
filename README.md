@@ -25,7 +25,7 @@
 │ [12:07] 💬 New comment - Add retry logic (o/r)  │
 │ [12:09] 🔀 Merged - Update deps (org/repo)      │
 │ ──────────────────────────────────────────────  │
-│  [s] sound  [c] clear  [r] restart  [q] quit    │
+│  [s] sound  [c] clear  [r] restart  [o] open  [q] quit  │
 └─────────────────────────────────────────────────┘
 </pre>
 </td>
@@ -75,6 +75,7 @@ All sounds are built-in macOS system sounds. No dependencies beyond the prereqs.
 | `s` | Toggle sound ON/OFF |
 | `c` | Clear the event log |
 | `r` | Restart daemon (if crashed) |
+| `o` | Open last event in browser |
 | `q` | Quit bar (also stops daemon) |
 
 ---

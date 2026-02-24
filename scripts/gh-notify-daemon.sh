@@ -68,10 +68,14 @@ send_notification() {
 }
 
 log_event() {
-    local icon="$1" label="$2" title="$3" repo="$4"
+    local icon="$1" label="$2" title="$3" repo="$4" url="${5:-}"
     local timestamp
     timestamp=$(date +"%H:%M")
-    printf '[%s] %s %s - %s (%s)\n' "$timestamp" "$icon" "$label" "$title" "$repo" >> "$EVENTS_LOG"
+    if [[ -n "$url" ]]; then
+        printf '[%s] %s %s - %s (%s)\t%s\n' "$timestamp" "$icon" "$label" "$title" "$repo" "$url" >> "$EVENTS_LOG"
+    else
+        printf '[%s] %s %s - %s (%s)\n' "$timestamp" "$icon" "$label" "$title" "$repo" >> "$EVENTS_LOG"
+    fi
     log_size=$(stat -f%z "$EVENTS_LOG" 2>/dev/null || echo 0)
     if [[ "$log_size" -gt 102400 ]]; then
         mv "$EVENTS_LOG" "${EVENTS_LOG}.$(date +%Y%m%d)"
@@ -92,6 +96,17 @@ api_get() {
         -H "Authorization: Bearer ${GH_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
         2>/dev/null
+}
+
+# Convert GitHub API URL to browser-navigable HTML URL
+to_html_url() {
+    local u="$1"
+    [[ -z "$u" ]] && { printf 'https://github.com/notifications'; return; }
+    printf '%s' "$u" | sed \
+        -e 's|https://api.github.com/repos/|https://github.com/|' \
+        -e 's|/pulls/\([0-9]*\)$|/pull/\1|' \
+        -e 's|/check-suites/[0-9]*$|/actions|' \
+        -e 's|/check-runs/[0-9]*$|/actions|'
 }
 
 # ── process a single notification ─────────────────────────────────────────────
@@ -117,10 +132,11 @@ process_notification() {
         tail -5000 "$SEEN_IDS" > "${SEEN_IDS}.tmp" && mv "${SEEN_IDS}.tmp" "$SEEN_IDS"
     fi
 
-    local event_icon event_label sound
+    local event_icon event_label sound html_url
     event_icon="🔔"
     event_label="Activity"
     sound="Ping.aiff"
+    html_url=$(to_html_url "$subj_url")
 
     case "$reason" in
         comment|mention)
@@ -144,6 +160,9 @@ process_notification() {
                 pr_data=$(api_get "$subj_url") || pr_data=""
 
                 if [[ -n "$pr_data" ]]; then
+                    local pr_html
+                    pr_html=$(printf '%s' "$pr_data" | jq -r '.html_url // empty')
+                    [[ -n "$pr_html" ]] && html_url="$pr_html"
                     merged=$(printf '%s' "$pr_data" | jq -r '.merged')
                     state=$(printf '%s' "$pr_data" | jq -r '.state')
 
@@ -182,6 +201,9 @@ process_notification() {
                 local sc_data sc_merged sc_state
                 sc_data=$(api_get "$subj_url") || sc_data=""
                 if [[ -n "$sc_data" ]]; then
+                    local sc_html
+                    sc_html=$(printf '%s' "$sc_data" | jq -r '.html_url // empty')
+                    [[ -n "$sc_html" ]] && html_url="$sc_html"
                     sc_merged=$(printf '%s' "$sc_data" | jq -r '.merged')
                     sc_state=$(printf '%s' "$sc_data" | jq -r '.state')
                     if [[ "$sc_merged" == "true" ]]; then
@@ -241,12 +263,13 @@ process_notification() {
                             fi
                             ;;
                     esac
+                    html_url="https://github.com/${repo_name}/actions"
                 fi
             fi
             ;;
     esac
 
-    log_event "$event_icon" "$event_label" "$title" "$repo_name"
+    log_event "$event_icon" "$event_label" "$title" "$repo_name" "$html_url"
     queue_sound "$sound"
     (( BATCH_COUNT++ )) || true
     if [[ -z "$BATCH_BEST_LABEL" ]]; then

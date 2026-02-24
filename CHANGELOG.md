@@ -11,6 +11,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.5.0] - 2026-02-23
+
+### Added
+- `[o]` keybind to open the last event's URL in the default browser
+- `to_html_url()` helper in daemon converts API URLs to browser-navigable HTML URLs: `pulls/N` → `pull/N`, `check-suites/N` → `actions`, empty → `https://github.com/notifications`
+- URL stored inline in events.log as tab-appended field: `[HH:MM] icon label - title (repo)\thttps://...`
+- CI events always link to the repo's Actions page; PR/issue events use `html_url` from the GitHub API response when available
+
+### Changed
+- Bar display loop strips tab-suffix before rendering (backward-compatible: lines without a tab are unchanged)
+- Hints line updated to include `[o] open`
+
+---
+
 ## [0.4.0] - 2026-02-23
 
 ### Added
@@ -75,7 +89,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/joryeugene/gh-notify/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/joryeugene/gh-notify/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/joryeugene/gh-notify/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/joryeugene/gh-notify/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/joryeugene/gh-notify/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/joryeugene/gh-notify/compare/v0.1.0...v0.2.0
