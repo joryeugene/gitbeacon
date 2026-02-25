@@ -120,6 +120,16 @@ if pgrep -f gh-notify-bar &>/dev/null; then
     ok "Stopped running bar — relaunch with: gh-notify"
 fi
 
+# Download notification icon (GitHub mark PNG — used by terminal-notifier -appIcon)
+if [[ ! -f "${STATE_DIR}/icon.png" ]]; then
+    if curl -fsSL "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" \
+            -o "${STATE_DIR}/icon.png" 2>/dev/null; then
+        ok "Notification icon downloaded"
+    else
+        warn "Icon download failed — notifications will use default terminal-notifier icon"
+    fi
+fi
+
 # Init state files (idempotent)
 [[ -f "${STATE_DIR}/sfx-state" ]] || echo "ON" > "${STATE_DIR}/sfx-state"
 touch "${STATE_DIR}/events.log" "${STATE_DIR}/seen-ids"

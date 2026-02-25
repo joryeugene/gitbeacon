@@ -1,6 +1,10 @@
 # gh-notify
 
 <p align="center">
+  <img src="assets/icon.svg" alt="gh-notify" width="80" height="80">
+</p>
+
+<p align="center">
   <a href="https://github.com/joryeugene/gh-notify/blob/main/LICENSE"><img src="https://img.shields.io/github/license/joryeugene/gh-notify.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey.svg" alt="macOS">
   <img src="https://img.shields.io/badge/requires-gh%20CLI-blue.svg" alt="requires gh CLI">

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!--
+    gh-notify icon — KingBee
+    A cute bee: amber body + black stripes, iridescent wings, big eyes, antennae.
+    Dark GitHub background. No badge — the bee IS the notification (it's buzzing at you).
+  -->
+
+  <!-- Background: GitHub dark rounded square -->
+  <rect width="100" height="100" rx="18" ry="18" fill="#0d1117"/>
+
+  <!-- ── Wings (behind everything) ── -->
+  <!-- Left wing: tilted up-left -->
+  <ellipse cx="24" cy="47" rx="18" ry="9"
+    fill="#b8d8ff" opacity="0.55"
+    transform="rotate(-30, 24, 47)"/>
+  <!-- Right wing: tilted up-right -->
+  <ellipse cx="76" cy="47" rx="18" ry="9"
+    fill="#b8d8ff" opacity="0.55"
+    transform="rotate(30, 76, 47)"/>
+
+  <!-- Wing shimmer lines (iridescent veins) -->
+  <ellipse cx="24" cy="47" rx="11" ry="5"
+    fill="none" stroke="#d4eaff" stroke-width="0.6" opacity="0.4"
+    transform="rotate(-30, 24, 47)"/>
+  <ellipse cx="76" cy="47" rx="11" ry="5"
+    fill="none" stroke="#d4eaff" stroke-width="0.6" opacity="0.4"
+    transform="rotate(30, 76, 47)"/>
+
+  <!-- ── Body (clipped stripes) ── -->
+  <defs>
+    <clipPath id="bee-body-clip">
+      <ellipse cx="50" cy="64" rx="18" ry="24"/>
+    </clipPath>
+  </defs>
+
+  <!-- Body base: honey amber -->
+  <ellipse cx="50" cy="64" rx="18" ry="24" fill="#f5c518"/>
+
+  <!-- Black stripes, clipped to body ellipse -->
+  <g clip-path="url(#bee-body-clip)">
+    <rect x="32" y="54" width="36" height="9"  fill="#1a1310"/>
+    <rect x="32" y="68" width="36" height="9"  fill="#1a1310"/>
+  </g>
+
+  <!-- Body highlight (top sheen) -->
+  <ellipse cx="44" cy="46" rx="6" ry="4"
+    fill="white" opacity="0.12"
+    transform="rotate(-15, 44, 46)"/>
+
+  <!-- ── Head ── -->
+  <circle cx="50" cy="30" r="13" fill="#f5c518"/>
+  <!-- Head highlight -->
+  <circle cx="45" cy="25" r="4" fill="white" opacity="0.14"/>
+
+  <!-- ── Eyes ── -->
+  <!-- Eye whites -->
+  <circle cx="44.5" cy="29" r="4"   fill="white"/>
+  <circle cx="55.5" cy="29" r="4"   fill="white"/>
+  <!-- Pupils -->
+  <circle cx="45.5" cy="29.5" r="2.3" fill="#0d1117"/>
+  <circle cx="56.5" cy="29.5" r="2.3" fill="#0d1117"/>
+  <!-- Shine dots -->
+  <circle cx="44.5" cy="28"   r="0.9" fill="white"/>
+  <circle cx="55.5" cy="28"   r="0.9" fill="white"/>
+
+  <!-- ── Smile ── -->
+  <path d="M 44 35 Q 50 41 56 35"
+    stroke="#1a1310" stroke-width="1.6" fill="none"
+    stroke-linecap="round"/>
+
+  <!-- ── Antennae ── -->
+  <line x1="45" y1="18" x2="34" y2="7"
+    stroke="#c8a010" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="55" y1="18" x2="66" y2="7"
+    stroke="#c8a010" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Antenna bulbs -->
+  <circle cx="34" cy="7"  r="3" fill="#f5c518"/>
+  <circle cx="66" cy="7"  r="3" fill="#f5c518"/>
+
+  <!-- ── Stinger ── -->
+  <polygon points="50,87 46.5,81 53.5,81" fill="#c8a010"/>
+</svg>

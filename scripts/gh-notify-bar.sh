@@ -173,8 +173,16 @@ while true; do
             open "$_url" 2>/dev/null || true
             ;;
         t|T)
-            if command -v terminal-notifier &>/dev/null; then
-                terminal-notifier -title "gh-notify" -message "Test notification from gh-notify" 2>/dev/null || true
+            _notifier="${HOME}/.config/gh-notify/gh-notify-notifier.app/Contents/MacOS/terminal-notifier"
+            [[ ! -x "$_notifier" ]] && _notifier="$(command -v terminal-notifier 2>/dev/null || true)"
+            if [[ -n "$_notifier" ]]; then
+                _icon="${HOME}/.config/gh-notify/icon.png"
+                if [[ -f "$_icon" ]]; then
+                    "$_notifier" -title "gh-notify" -message "Test notification from gh-notify" \
+                        -contentImage "$_icon" 2>/dev/null || true
+                else
+                    "$_notifier" -title "gh-notify" -message "Test notification from gh-notify" 2>/dev/null || true
+                fi
             else
                 osascript -e 'display notification "Test notification from gh-notify" with title "gh-notify"' 2>/dev/null || true
             fi
