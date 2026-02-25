@@ -73,6 +73,15 @@ else
     die "osascript not found. gh-notify requires macOS for notifications and sounds."
 fi
 
+if command -v terminal-notifier &>/dev/null; then
+    ok "terminal-notifier found: $(terminal-notifier -version 2>/dev/null || echo 'installed')"
+elif command -v brew &>/dev/null; then
+    info "Installing terminal-notifier via Homebrew..."
+    brew install terminal-notifier &>/dev/null && ok "terminal-notifier installed" || warn "terminal-notifier install failed — notifications may not appear from tmux"
+else
+    warn "terminal-notifier not found and Homebrew unavailable. Install manually: brew install terminal-notifier"
+fi
+
 if [[ "$FAIL" -eq 1 ]]; then
     echo
     die "Missing prerequisites above. Install them and re-run."
@@ -100,6 +109,12 @@ chmod +x "${STATE_DIR}/gh-notify-daemon.sh" "${STATE_DIR}/gh-notify-bar.sh"
 
 ok "Copied gh-notify-daemon.sh"
 ok "Copied gh-notify-bar.sh"
+
+# If a bar is already running, kill it so it picks up the new scripts on next launch
+if pgrep -f gh-notify-bar &>/dev/null; then
+    pkill -f gh-notify-bar 2>/dev/null || true
+    ok "Stopped running bar — relaunch with: gh-notify"
+fi
 
 # Init state files (idempotent)
 [[ -f "${STATE_DIR}/sfx-state" ]] || echo "ON" > "${STATE_DIR}/sfx-state"
@@ -165,12 +180,16 @@ else
     VFAIL=1
 fi
 
-# Check osascript works
-if osascript -e 'return 0' &>/dev/null; then
-    ok "osascript: working"
+# Send test notification to confirm delivery
+if command -v terminal-notifier &>/dev/null; then
+    terminal-notifier -title "gh-notify setup" \
+        -message "Grant permission in System Settings if prompted" 2>/dev/null || true
+    ok "macOS notifications: terminal-notifier"
+    info "If no banner appeared: check Do Not Disturb is off, and"
+    info "System Settings > Notifications > terminal-notifier > set style to Banners"
 else
-    warn "osascript: not responding"
-    VFAIL=1
+    osascript -e 'display notification "If you see this, notifications are working!" with title "gh-notify setup"' 2>/dev/null || true
+    ok "macOS notifications: sent via osascript (install terminal-notifier for reliable tmux support)"
 fi
 
 echo

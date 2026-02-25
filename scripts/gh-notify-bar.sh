@@ -37,6 +37,8 @@ trap cleanup EXIT SIGTERM SIGINT
 # Hide cursor in the bar pane
 tput civis 2>/dev/null || true
 
+_status_msg=""
+
 # ── display loop ──────────────────────────────────────────────────────────────
 while true; do
     # Move to top of pane and clear
@@ -63,6 +65,8 @@ while true; do
                 *"🔒"*) printf '\033[1;33m%s\033[0m\n' "$_display" ;;
                 *"🔓"*) printf '\033[1;33m%s\033[0m\n' "$_display" ;;
                 *"🛡"*)  printf '\033[1;35m%s\033[0m\n' "$_display" ;;
+                *"🚦"*)  printf '\033[1;33m%s\033[0m\n' "$_display" ;;
+                *"⏭️"*) printf '\033[2m%s\033[0m\n'   "$_display" ;;
                 *)       printf '\033[2m%s\033[0m\n'   "$_display" ;;
             esac
         done < <(tail -8 "$EVENTS_LOG")
@@ -73,6 +77,12 @@ while true; do
     # Daemon health check
     if ! kill -0 "$DAEMON_PID" 2>/dev/null; then
         printf '\033[1;33m  ⚠  daemon offline - press r to restart\033[0m\n'
+    fi
+
+    # Transient status message (shown once, then cleared)
+    if [[ -n "$_status_msg" ]]; then
+        printf '  \033[1m%s\033[0m\n' "$_status_msg"
+        _status_msg=""
     fi
 
     # Separator + keybind hints
@@ -90,16 +100,18 @@ while true; do
         _cnt_merge=$(grep -c '🔀' "$EVENTS_LOG" 2>/dev/null)    || _cnt_merge=0
         _cnt_approve=$(grep -c '✅' "$EVENTS_LOG" 2>/dev/null)  || _cnt_approve=0
         _cnt_changes=$(grep -c '🔁' "$EVENTS_LOG" 2>/dev/null)  || _cnt_changes=0
+        _cnt_approval=$(grep -c '🚦' "$EVENTS_LOG" 2>/dev/null) || _cnt_approval=0
         _cnt_comment=$(grep -c '💬' "$EVENTS_LOG" 2>/dev/null)  || _cnt_comment=0
         _cnt_fail=$(grep -c '❌' "$EVENTS_LOG" 2>/dev/null)     || _cnt_fail=0
         _cnt_pass=$(grep -c '🟢' "$EVENTS_LOG" 2>/dev/null)     || _cnt_pass=0
         _stats=""
-        [[ "$_cnt_merge"   -gt 0 ]] && _stats+="🔀 ${_cnt_merge}  "
-        [[ "$_cnt_approve" -gt 0 ]] && _stats+="✅ ${_cnt_approve}  "
-        [[ "$_cnt_changes" -gt 0 ]] && _stats+="🔁 ${_cnt_changes}  "
-        [[ "$_cnt_comment" -gt 0 ]] && _stats+="💬 ${_cnt_comment}  "
-        [[ "$_cnt_fail"    -gt 0 ]] && _stats+="❌ ${_cnt_fail}  "
-        [[ "$_cnt_pass"    -gt 0 ]] && _stats+="🟢 ${_cnt_pass}  "
+        [[ "$_cnt_merge"    -gt 0 ]] && _stats+="🔀 ${_cnt_merge}  "
+        [[ "$_cnt_approve"  -gt 0 ]] && _stats+="✅ ${_cnt_approve}  "
+        [[ "$_cnt_changes"  -gt 0 ]] && _stats+="🔁 ${_cnt_changes}  "
+        [[ "$_cnt_approval" -gt 0 ]] && _stats+="🚦 ${_cnt_approval}  "
+        [[ "$_cnt_comment"  -gt 0 ]] && _stats+="💬 ${_cnt_comment}  "
+        [[ "$_cnt_fail"     -gt 0 ]] && _stats+="❌ ${_cnt_fail}  "
+        [[ "$_cnt_pass"     -gt 0 ]] && _stats+="🟢 ${_cnt_pass}  "
         _top_repos=$(grep -oE '\([^)]+/[^)]+\)' "$EVENTS_LOG" 2>/dev/null \
             | sed 's/[()]//g' | sort | uniq -c | sort -rn | head -3 \
             | awk '{printf "%s(%s) ", $2, $1}')
@@ -121,7 +133,7 @@ while true; do
         esac
     fi
 
-    printf '  \033[1m[s]\033[0msnd(%s)  \033[1m[c]\033[0mclr  \033[1m[r]\033[0mrst  \033[1m[o]\033[0m%s  \033[1m[q]\033[0mquit\n' \
+    printf '  \033[1m[s]\033[0msnd(%s)  \033[1m[c]\033[0mclr  \033[1m[r]\033[0mrst  \033[1m[o]\033[0m%s  \033[1m[t]\033[0mtest  \033[1m[q]\033[0mquit\n' \
         "$local_sfx" "$_open_label"
 
     # Read a single keypress (2s timeout, no echo)
@@ -159,6 +171,14 @@ while true; do
                 _url="https://github.com/notifications"
             fi
             open "$_url" 2>/dev/null || true
+            ;;
+        t|T)
+            if command -v terminal-notifier &>/dev/null; then
+                terminal-notifier -title "gh-notify" -message "Test notification from gh-notify" 2>/dev/null || true
+            else
+                osascript -e 'display notification "Test notification from gh-notify" with title "gh-notify"' 2>/dev/null || true
+            fi
+            _status_msg="Test sent - check top-right corner"
             ;;
         q|Q)
             break

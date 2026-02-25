@@ -31,6 +31,25 @@
 </td>
 </tr></table>
 
+## macOS Notification Permissions
+
+gh-notify uses `terminal-notifier` for reliable notification delivery from tmux. The installer handles installation automatically.
+
+**Why terminal-notifier:** `osascript display notification` requires the calling process to be attached to the macOS GUI session. The tmux server is a background daemon — notifications sent via `osascript` from within tmux are silently dropped. `terminal-notifier` ships as a proper `.app` bundle with notification entitlements that work from any context, including tmux.
+
+**One-time setup:** On first use, macOS opens System Settings to request notification permission. Find `terminal-notifier` in the list and set the style to **Banners** or **Alerts**.
+
+```bash
+# Jump directly to the Notifications pane:
+open "x-apple.systempreferences:com.apple.preference.notifications"
+```
+
+**After running the installer:** If the bar was already running, it was stopped automatically. Relaunch with `gh-notify`.
+
+**If banners stop appearing:** Check that Do Not Disturb / Focus mode is off (Control Center, top-right menu bar). Press `[t]` in the bar to send a test notification.
+
+---
+
 ## TLDR
 
 **Prerequisites** (one-time):
@@ -76,6 +95,7 @@ All sounds are built-in macOS system sounds. No dependencies beyond the prereqs.
 | `c` | Clear the event log |
 | `r` | Restart daemon (if crashed) |
 | `o` | Open last event in browser |
+| `t` | Send test notification (opens System Settings on failure) |
 | `q` | Quit bar (also stops daemon) |
 
 ---

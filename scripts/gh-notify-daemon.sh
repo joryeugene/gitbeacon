@@ -39,7 +39,11 @@ send_notification() {
     title="${title//\\/}"; title="${title//\"/\'}"
     subtitle="${subtitle//\\/}"; subtitle="${subtitle//\"/\'}"
     message="${message//\\/}"; message="${message//\"/\'}"
-    osascript -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle\"" 2>/dev/null || true
+    if command -v terminal-notifier &>/dev/null; then
+        terminal-notifier -title "$title" -subtitle "$subtitle" -message "$message" 2>/dev/null || true
+    else
+        osascript -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle\"" 2>/dev/null || true
+    fi
 }
 
 log_event() {
@@ -147,6 +151,16 @@ process_notification() {
             event_label="Assigned"
             sound="Ping.aiff"
             ;;
+        approval_requested)
+            event_icon="🚦"
+            event_label="Approval needed"
+            sound="Tink.aiff"
+            ;;
+        invitation)
+            event_icon="📬"
+            event_label="Repo invitation"
+            sound="Ping.aiff"
+            ;;
         author)
             if [[ "$subj_type" == "PullRequest" && -n "$subj_url" ]]; then
                 local pr_data merged state
@@ -192,6 +206,32 @@ process_notification() {
                             event_label="PR comment"
                             sound="Tink.aiff"
                         fi
+                    elif [[ "$state" == "closed" ]]; then
+                        event_icon="🔒"
+                        event_label="PR closed"
+                        sound="Funk.aiff"
+                    fi
+                fi
+            elif [[ "$subj_type" == "Issue" && -n "$subj_url" ]]; then
+                local issue_data issue_state
+                issue_data=$(api_get "$subj_url") || issue_data=""
+                if [[ -n "$issue_data" ]]; then
+                    local issue_html
+                    issue_html=$(printf '%s' "$issue_data" | jq -r '.html_url // empty')
+                    [[ -n "$issue_html" ]] && html_url="$issue_html"
+                    issue_state=$(printf '%s' "$issue_data" | jq -r '.state')
+                    if [[ "$issue_state" == "closed" ]]; then
+                        event_icon="🔒"
+                        event_label="Issue closed"
+                        sound="Funk.aiff"
+                    elif [[ "$issue_state" == "open" ]]; then
+                        event_icon="🔓"
+                        event_label="Issue reopened"
+                        sound="Pop.aiff"
+                    else
+                        event_icon="💬"
+                        event_label="Issue comment"
+                        sound="Tink.aiff"
                     fi
                 fi
             fi
@@ -259,6 +299,11 @@ process_notification() {
                             event_icon="⛔"
                             event_label="CI cancelled"
                             sound="Funk.aiff"
+                            ;;
+                        skipped|neutral|stale)
+                            event_icon="⏭️"
+                            event_label="CI skipped"
+                            sound="Ping.aiff"
                             ;;
                         *)
                             if [[ "$ci_status" == "in_progress" ]]; then
