@@ -39,19 +39,13 @@ send_notification() {
     title="${title//\\/}"; title="${title//\"/\'}"
     subtitle="${subtitle//\\/}"; subtitle="${subtitle//\"/\'}"
     message="${message//\\/}"; message="${message//\"/\'}"
-    local _notifier="${STATE_DIR}/gh-notify-notifier.app/Contents/MacOS/terminal-notifier"
-    if [[ ! -x "$_notifier" ]]; then
-        _notifier="$(command -v terminal-notifier 2>/dev/null || true)"
+    local _custom="${STATE_DIR}/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier"
+    local _sent=false
+    local _args=(-title "$title" -subtitle "$subtitle" -message "$message")
+    if [[ -x "$_custom" ]]; then
+        "$_custom" "${_args[@]}" 2>/dev/null && _sent=true || true
     fi
-    if [[ -n "$_notifier" ]]; then
-        local _icon="${STATE_DIR}/icon.png"
-        if [[ -f "$_icon" ]]; then
-            "$_notifier" -title "$title" -subtitle "$subtitle" -message "$message" \
-                -contentImage "$_icon" 2>/dev/null || true
-        else
-            "$_notifier" -title "$title" -subtitle "$subtitle" -message "$message" 2>/dev/null || true
-        fi
-    else
+    if ! $_sent; then
         osascript -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle\"" 2>/dev/null || true
     fi
 }

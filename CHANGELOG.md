@@ -11,6 +11,25 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.8.1] - 2026-02-25
+
+### Changed
+- `build-notifier` / installer: replaced terminal-notifier repackaging with a compiled ObjC binary (`scripts/gh-notify-notifier.m`). No `brew install terminal-notifier` required; prerequisite is now Xcode CLT (`clang`) + `librsvg`.
+- daemon/bar: `send_notification` and `[t]` handler now call the `gh-notify-notifier` binary directly; removed `terminal-notifier` and `icon.png` fallback paths.
+- install.sh: idempotency check now verifies `CFBundleDisplayName == "GH Notifier"` and `CFBundleExecutable == "gh-notify-notifier"` — stale installs missing the display name are auto-rebuilt on re-run.
+- install.sh: Step 4 verify tests the custom app and opens System Settings automatically if permissions are denied.
+- README: notification permissions section updated to reference "GH Notifier" throughout; verification command updated to call the custom app binary.
+
+### Fixed
+- Notification prompt / System Settings entry now shows **GH Notifier** instead of falling back to the executable name `gh-notify-notifier`.
+- Icon cache flushed after build (`touch`, `iconservicesagent`, `lsregister`, `notificationcenterui` restart) so the bee icon and correct display name appear immediately in the permission prompt.
+
+### Added
+- `scripts/gh-notify-notifier.plist`: authored `Info.plist` with `CFBundleDisplayName = "GH Notifier"`, `CFBundleName = "GH Notifier"`, `CFBundleIdentifier = "com.joryeugene.gh-notify"`.
+- `scripts/gh-notify-notifier.m`: minimal Objective-C notification binary source (compilable via Xcode CLT, no Swift toolchain required).
+
+---
+
 ## [0.8.0] - 2026-02-24
 
 ### Added

@@ -173,20 +173,21 @@ while true; do
             open "$_url" 2>/dev/null || true
             ;;
         t|T)
-            _notifier="${HOME}/.config/gh-notify/gh-notify-notifier.app/Contents/MacOS/terminal-notifier"
-            [[ ! -x "$_notifier" ]] && _notifier="$(command -v terminal-notifier 2>/dev/null || true)"
-            if [[ -n "$_notifier" ]]; then
-                _icon="${HOME}/.config/gh-notify/icon.png"
-                if [[ -f "$_icon" ]]; then
-                    "$_notifier" -title "gh-notify" -message "Test notification from gh-notify" \
-                        -contentImage "$_icon" 2>/dev/null || true
-                else
-                    "$_notifier" -title "gh-notify" -message "Test notification from gh-notify" 2>/dev/null || true
-                fi
-            else
-                osascript -e 'display notification "Test notification from gh-notify" with title "gh-notify"' 2>/dev/null || true
+            _custom="${HOME}/.config/gh-notify/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier"
+            _targs=(-title "gh-notify" -message "Test notification from gh-notify")
+            _sent=false
+            if [[ -x "$_custom" ]]; then
+                "$_custom" "${_targs[@]}" 2>/dev/null && _sent=true || true
             fi
-            _status_msg="Test sent - check top-right corner"
+            if ! $_sent; then
+                osascript -e 'display notification "Test notification from gh-notify" with title "gh-notify"' 2>/dev/null && _sent=true || true
+            fi
+            if $_sent; then
+                _status_msg="Test sent - check top-right corner"
+            else
+                open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
+                _status_msg="⚠  no notifier - opened System Settings > Notifications"
+            fi
             ;;
         q|Q)
             break

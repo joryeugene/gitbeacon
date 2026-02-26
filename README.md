@@ -18,30 +18,24 @@
 </td>
 <td align="center">
 <pre>
-┌─────────────────────────────────────────────────┐
-│                                                 │
-│              gh dash (full width)               │
-│                                                 │
-│   PRs  Issues  Repos  ...                       │
-│                                                 │
-├─────────────────────────────────────────────────┤
-│ [12:04] ✅ Approved by alice - Fix auth (org/r) │
-│ [12:07] 💬 New comment - Add retry logic (o/r)  │
-│ [12:09] 🔀 Merged - Update deps (org/repo)      │
-│ ──────────────────────────────────────────────  │
-│  [s] sound  [c] clear  [r] restart  [o] open  [q] quit  │
-└─────────────────────────────────────────────────┘
+[12:04] ✅ Approved - Fix auth (org/repo)
+[12:07] 💬 Comment - Add retry logic (org/repo)
+[12:09] 🔀 Merged - Update deps (org/repo)
+[12:11] 🔔 Activity - CI passed (org/repo)
+              ·:·[ gh-notify · 4 ]·:·
+  ✅ 1  🔀 1  💬 1  │  org/repo(4)
+  [s]snd(ON)  [c]clr  [r]rst  [o]PR  [t]test  [q]quit
 </pre>
 </td>
 </tr></table>
 
 ## macOS Notification Permissions
 
-gh-notify uses `terminal-notifier` for reliable notification delivery from tmux. The installer handles installation automatically.
+gh-notify ships a custom notification app (`gh-notify-notifier.app`) — a minimal Objective-C `.app` bundle with the KingBee bee icon and bundle ID `com.joryeugene.gh-notify`. It appears in System Settings as **GH Notifier**.
 
-**Why terminal-notifier:** `osascript display notification` requires the calling process to be attached to the macOS GUI session. The tmux server is a background daemon — notifications sent via `osascript` from within tmux are silently dropped. `terminal-notifier` ships as a proper `.app` bundle with notification entitlements that work from any context, including tmux.
+**Why a custom app:** `osascript display notification` requires the calling process to be attached to the macOS GUI session. The tmux server is a background daemon — notifications sent via `osascript` from within tmux are silently dropped. A proper `.app` bundle with `UNUserNotificationCenter` works from any context, including tmux.
 
-**One-time setup:** On first use, macOS opens System Settings to request notification permission. Find `terminal-notifier` in the list and set the style to **Banners** or **Alerts**.
+**One-time setup:** On first use, macOS opens System Settings to request notification permission. Find **GH Notifier** in the list and set the style to **Banners** or **Alerts**. The first launch triggers a permission prompt — click **Allow**.
 
 ```bash
 # Jump directly to the Notifications pane:
@@ -129,7 +123,7 @@ flowchart LR
         Q["priority queue\nHero › Glass › Ping › Tink"] --> GATE{sfx-state}
         GATE -->|ON| SOUND[afplay]
         GATE -->|OFF| MUTE[silent]
-        Q --> POPUP[osascript]
+        Q --> POPUP[gh-notify-notifier]
         Q --> LOG[events.log]
     end
 
@@ -250,8 +244,9 @@ gh-notify
 # 2. Test sound
 afplay /System/Library/Sounds/Glass.aiff
 
-# 3. Test popup
-osascript -e 'display notification "PR #42 approved" with title "GitHub: Approved" subtitle "org/repo"'
+# 3. Test popup (uses GH Notifier custom app with bee icon)
+~/.config/gh-notify/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier \
+    -title "GH Notifier" -message "Test"
 
 # 4. Check daemon is running
 pgrep -f gh-notify-daemon && echo "daemon running"

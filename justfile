@@ -49,20 +49,22 @@ notes:
         git log --pretty="format:- %s" --reverse "${LAST_TAG}..HEAD"
     fi
 
-# Build a custom gh-notify-notifier.app with pixel art icon.
-# Repackages terminal-notifier with our icon + bundle ID so the left-side app icon
-# in macOS notifications shows the gh-notify bell instead of terminal-notifier's icon.
+# Build a custom gh-notify-notifier.app with KingBee icon.
+# Compiles a minimal ObjC notification binary and bundles it with our icon + bundle ID
+# so the left-side app icon in macOS notifications shows the bee, not terminal-notifier's tree.
 #
-# Prereqs: sips, iconutil, codesign, PlistBuddy (built-in macOS) + rsvg-convert (brew install librsvg)
-# Requires: brew terminal-notifier already installed
+# Prereqs: clang (Xcode CLT), sips, iconutil, codesign, PlistBuddy (built-in macOS)
+#          + rsvg-convert (brew install librsvg)
 # One-time after build: macOS will prompt for notification permission on first use.
 build-notifier:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    TN_APP="$(brew --prefix terminal-notifier 2>/dev/null)/terminal-notifier.app"
-    [[ -d "$TN_APP" ]] || { echo "✗  terminal-notifier.app not found — run: brew install terminal-notifier"; exit 1; }
     [[ -f "assets/icon.svg" ]] || { echo "✗  assets/icon.svg not found — run from repo root"; exit 1; }
+    [[ -f "scripts/gh-notify-notifier.m" ]] || { echo "✗  scripts/gh-notify-notifier.m not found"; exit 1; }
+    [[ -f "scripts/gh-notify-notifier.plist" ]] || { echo "✗  scripts/gh-notify-notifier.plist not found"; exit 1; }
+    command -v clang &>/dev/null || { echo "✗  clang not found — install CLT: xcode-select --install"; exit 1; }
+    command -v rsvg-convert &>/dev/null || { echo "✗  rsvg-convert not found — run: brew install librsvg"; exit 1; }
 
     STATE_DIR="${HOME}/.config/gh-notify"
     BUILD_DIR="${STATE_DIR}/.build"
@@ -71,7 +73,6 @@ build-notifier:
     mkdir -p "$BUILD_DIR"
 
     echo "→ Rendering icon SVG → PNG..."
-    command -v rsvg-convert &>/dev/null || { echo "✗  rsvg-convert not found — run: brew install librsvg"; exit 1; }
     rsvg-convert -w 1024 -h 1024 assets/icon.svg -o "${BUILD_DIR}/icon-1024.png"
 
     echo "→ Building iconset..."
@@ -81,27 +82,29 @@ build-notifier:
         sips -z "$size" "$size" "${BUILD_DIR}/icon-1024.png" \
             --out "${ICONSET}/icon_${size}x${size}.png" &>/dev/null
     done
-    cp "${ICONSET}/icon_32x32.png"   "${ICONSET}/icon_16x16@2x.png"
-    cp "${ICONSET}/icon_64x64.png"   "${ICONSET}/icon_32x32@2x.png"
-    cp "${ICONSET}/icon_256x256.png" "${ICONSET}/icon_128x128@2x.png"
-    cp "${ICONSET}/icon_512x512.png" "${ICONSET}/icon_256x256@2x.png"
+    cp "${ICONSET}/icon_32x32.png"     "${ICONSET}/icon_16x16@2x.png"
+    cp "${ICONSET}/icon_64x64.png"     "${ICONSET}/icon_32x32@2x.png"
+    cp "${ICONSET}/icon_256x256.png"   "${ICONSET}/icon_128x128@2x.png"
+    cp "${ICONSET}/icon_512x512.png"   "${ICONSET}/icon_256x256@2x.png"
     cp "${ICONSET}/icon_1024x1024.png" "${ICONSET}/icon_512x512@2x.png"
     iconutil -c icns "$ICONSET" --output "${BUILD_DIR}/gh-notify.icns"
 
-    echo "→ Copying app bundle..."
+    echo "→ Compiling notifier binary..."
+    clang -fobjc-arc \
+        -framework AppKit \
+        -framework UserNotifications \
+        -target arm64-apple-macosx14.0 \
+        -o "${BUILD_DIR}/gh-notify-notifier" \
+        scripts/gh-notify-notifier.m
+
+    echo "→ Assembling app bundle..."
     rm -rf "$APP_DEST"
-    cp -r "$TN_APP" "$APP_DEST"
-
-    echo "→ Swapping icon..."
-    cp "${BUILD_DIR}/gh-notify.icns" "${APP_DEST}/Contents/Resources/Terminal.icns"
-
-    echo "→ Patching Info.plist..."
-    /usr/libexec/PlistBuddy -c \
-        "Set :CFBundleIdentifier com.joryeugene.gh-notify-notifier" \
-        "${APP_DEST}/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c \
-        "Set :CFBundleName gh-notify" \
-        "${APP_DEST}/Contents/Info.plist"
+    mkdir -p "${APP_DEST}/Contents/MacOS"
+    mkdir -p "${APP_DEST}/Contents/Resources"
+    cp "${BUILD_DIR}/gh-notify-notifier" "${APP_DEST}/Contents/MacOS/gh-notify-notifier"
+    chmod +x "${APP_DEST}/Contents/MacOS/gh-notify-notifier"
+    cp "${BUILD_DIR}/gh-notify.icns" "${APP_DEST}/Contents/Resources/gh-notify.icns"
+    cp scripts/gh-notify-notifier.plist "${APP_DEST}/Contents/Info.plist"
 
     echo "→ Ad-hoc signing..."
     codesign --force --deep --sign - "$APP_DEST"
@@ -109,13 +112,41 @@ build-notifier:
     echo "→ Clearing quarantine..."
     xattr -dr com.apple.quarantine "$APP_DEST" 2>/dev/null || true
 
-    echo "→ Triggering first-launch permission prompt..."
-    open "$APP_DEST"
+    echo "→ Flushing icon cache..."
+    touch "$APP_DEST"
+    killall iconservicesagent 2>/dev/null || true
+    _ICON_STORE="$(getconf DARWIN_USER_CACHE_DIR 2>/dev/null)com.apple.iconservices/store.index"
+    [[ -f "$_ICON_STORE" ]] && rm -f "$_ICON_STORE" || true
+    _LSR="/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister"
+    [[ -x "$_LSR" ]] && "$_LSR" -f "$APP_DEST" 2>/dev/null || true
+    launchctl kickstart -k "gui/$(id -u)/com.apple.notificationcenterui" 2>/dev/null || true
     sleep 2
-    pkill -f "gh-notify-notifier" 2>/dev/null || true
+
+    echo "→ Resetting stale notification center registration..."
+    launchctl kickstart -k "gui/$(id -u)/com.apple.notificationcenterui" 2>/dev/null || true
+    sleep 1
+    _nc_prefs="${HOME}/Library/Preferences/com.apple.ncprefs.plist"
+    _nc_count=$(/usr/libexec/PlistBuddy -c "Print :apps" "$_nc_prefs" 2>/dev/null \
+        | grep -c "Dict {" || true)
+    for _ni in $(seq 0 $(( _nc_count - 1 ))); do
+        _nb=$(/usr/libexec/PlistBuddy -c "Print :apps:${_ni}:bundle-id" \
+            "$_nc_prefs" 2>/dev/null || true)
+        if [[ "$_nb" == "com.joryeugene.gh-notify" ]]; then
+            /usr/libexec/PlistBuddy -c "Delete :apps:${_ni}" "$_nc_prefs" 2>/dev/null || true
+            break
+        fi
+    done
+    launchctl kickstart -k "gui/$(id -u)/com.apple.notificationcenterui" 2>/dev/null || true
+    sleep 1
+
+    echo "→ Triggering first-launch permission prompt..."
+    open -n -W "$APP_DEST" --args \
+        -title "GH Notifier" \
+        -message "Allow notifications — click Allow in the dialog above" \
+        2>/dev/null || true
 
     echo "✓  ${APP_DEST} ready"
-    echo "   Check System Settings > Notifications > gh-notify and set style to Banners."
+    echo "   Check System Settings > Notifications > GH Notifier and set style to Banners."
 
 # Tag and push a release: lints, syncs locally, tags, pushes, prints release URL
 # Prereq: CHANGELOG.md already updated for the version; commit all changes first
