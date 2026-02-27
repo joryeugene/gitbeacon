@@ -63,10 +63,11 @@ log_event() {
     local timestamp
     timestamp=$(date +"%H:%M")
     if [[ -n "$url" ]]; then
-        printf '[%s] %s %s - %s (%s)\t%s\n' "$timestamp" "$icon" "$label" "$title" "$repo" "$url" >> "$EVENTS_LOG"
+        printf '[%s] %s %s  (%s)\t%s\n' "$timestamp" "$icon" "$label" "$repo" "$url" >> "$EVENTS_LOG"
     else
-        printf '[%s] %s %s - %s (%s)\n' "$timestamp" "$icon" "$label" "$title" "$repo" >> "$EVENTS_LOG"
+        printf '[%s] %s %s  (%s)\n' "$timestamp" "$icon" "$label" "$repo" >> "$EVENTS_LOG"
     fi
+    printf '         %s\n' "$title" >> "$EVENTS_LOG"
     log_size=$(stat -f%z "$EVENTS_LOG" 2>/dev/null || echo 0)
     if [[ "$log_size" -gt 102400 ]]; then
         mv "$EVENTS_LOG" "${EVENTS_LOG}.$(date +%Y%m%d)"

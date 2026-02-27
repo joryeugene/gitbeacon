@@ -89,7 +89,7 @@ while true; do
                 *"⏭️"*) printf '\033[2m%s\033[0m\n'   "$_display" ;;
                 *)       printf '\033[2m%s\033[0m\n'   "$_display" ;;
             esac
-        done < <(tail -8 "$EVENTS_LOG")
+        done < <(tail -16 "$EVENTS_LOG")
     else
         printf '\033[2m  Watching for GitHub notifications...\033[0m\n'
     fi
@@ -107,7 +107,7 @@ while true; do
 
     # Separator + keybind hints
     local_sfx=$(cat "$SFX_STATE" 2>/dev/null || echo "ON")
-    _count=$(wc -l < "$EVENTS_LOG" 2>/dev/null | tr -d ' '); _count="${_count:-0}"
+    _count=$(grep -c '^\[' "$EVENTS_LOG" 2>/dev/null | tr -d ' '); _count="${_count:-0}"
     _cols=${COLUMNS:-$(tput cols 2>/dev/null)}
     (( ${_cols:-0} > 0 )) || _cols=80
     _label="·:·[ gh-notify · ${_count} ]·:·"
@@ -144,7 +144,7 @@ while true; do
 
     # Determine [o] label from last event URL type
     _open_label="open"
-    _last_event=$(tail -1 "$EVENTS_LOG" 2>/dev/null)
+    _last_event=$(grep $'\t' "$EVENTS_LOG" 2>/dev/null | tail -1)
     if [[ "$_last_event" == *$'\t'* ]]; then
         case "$_last_event" in
             *"/actions"*) _open_label="CI"  ;;
@@ -184,7 +184,7 @@ while true; do
             DAEMON_PID=$!
             ;;
         o|O)
-            _last=$(tail -1 "$EVENTS_LOG" 2>/dev/null || true)
+            _last=$(grep $'\t' "$EVENTS_LOG" 2>/dev/null | tail -1 || true)
             if [[ "$_last" == *$'\t'* ]]; then
                 _url="${_last##*$'\t'}"
             else
