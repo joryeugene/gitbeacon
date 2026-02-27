@@ -17,6 +17,26 @@ sync:
               "${HOME}/.config/gh-notify/gh-notify-bar.sh"
     @echo "synced → ~/.config/gh-notify/  (press [r] in bar to reload)"
 
+# Send a test notification with custom text
+# Usage: just notify "your message here"
+notify msg:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    _custom="${HOME}/.config/gh-notify/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier"
+    _sent=false
+    if [[ -x "$_custom" ]]; then
+        "$_custom" -title "gh-notify" -message "{{msg}}" 2>/dev/null && _sent=true || true
+    fi
+    if ! $_sent; then
+        osascript -e "display notification \"{{msg}}\" with title \"gh-notify\"" 2>/dev/null && _sent=true || true
+    fi
+    if $_sent; then
+        echo "✓  notification sent"
+    else
+        open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
+        echo "✗  no notifier found — opened System Settings > Notifications"
+    fi
+
 # Full install: prereq checks, copy scripts, install CLI wrapper (first-time setup)
 install:
     bash install.sh
@@ -148,17 +168,23 @@ build-notifier:
     echo "✓  ${APP_DEST} ready"
     echo "   Check System Settings > Notifications > GH Notifier and set style to Banners."
 
-# Tag and push a release: lints, syncs locally, tags, pushes, prints release URL
+# Tag and push a release: lints, syncs locally, tags, pushes, creates draft GitHub release
 # Prereq: CHANGELOG.md already updated for the version; commit all changes first
 # Usage: just release 0.6.0
 release version:
-    @echo "→ Checking CHANGELOG.md has [{{version}}] entry..."
-    @grep -q "\[{{version}}\]" CHANGELOG.md || { echo "✗  [{{version}}] not found in CHANGELOG.md — update it first"; exit 1; }
-    @echo "→ Linting..."
-    @just lint
-    @echo "→ Syncing scripts to ~/.config/gh-notify/..."
-    @just sync
-    @echo "→ Tagging v{{version}}..."
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "→ Checking CHANGELOG.md has [{{version}}] entry..."
+    grep -q "\[{{version}}\]" CHANGELOG.md \
+        || { echo "✗  [{{version}}] not found in CHANGELOG.md — update it first"; exit 1; }
+    echo "→ Linting..."
+    just lint
+    echo "→ Syncing scripts to ~/.config/gh-notify/..."
+    just sync
+    echo "→ Tagging v{{version}}..."
     git tag -a "v{{version}}" -m "v{{version}}"
     git push origin main "v{{version}}"
-    @echo "→ Draft release: https://github.com/joryeugene/gh-notify/releases/new?tag=v{{version}}"
+    echo "→ Creating draft release on GitHub..."
+    NOTES=$(awk '/^## \[{{version}}\]/{found=1; next} found && /^---/{exit} found{print}' CHANGELOG.md)
+    gh release create "v{{version}}" --title "v{{version}}" --draft --notes "$NOTES"
+    echo "✓  Draft release ready: https://github.com/joryeugene/gh-notify/releases"
