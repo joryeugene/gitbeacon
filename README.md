@@ -32,6 +32,10 @@
 
 gh-notify ships a custom notification app (`gh-notify-notifier.app`) — a minimal Objective-C `.app` bundle with the KingBee bee icon and bundle ID `com.joryeugene.gh-notify`. It appears in System Settings as **GH Notifier**.
 
+<p align="center">
+  <img src="assets/mac-notification.png" alt="gh-notify macOS notification banner" width="380">
+</p>
+
 **Why a custom app:** `osascript display notification` requires the calling process to be attached to the macOS GUI session. Background daemons run in a detached session with no GUI attachment — notifications sent via `osascript` from a detached process are silently dropped. A proper `.app` bundle with `UNUserNotificationCenter` works from any context, including background daemons.
 
 **One-time setup:** On first use, macOS opens System Settings to request notification permission. Find **GH Notifier** in the list and set the style to **Banners** or **Alerts**. The first launch triggers a permission prompt — click **Allow**.
