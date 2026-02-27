@@ -11,6 +11,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.9.0] - 2026-02-26
+
+### Changed
+- Event log now uses 2-line format: headline (timestamp + icon + label + repo) on line 1, title indented on line 2
+- Bar shows 16 lines (8 events × 2 lines each) instead of 8 lines
+- Event count uses `grep -c '^\['` instead of `wc -l` to avoid double-counting detail lines
+- `[o]` URL extraction targets tab-bearing lines (header lines only)
+
+### Fixed
+- Antifragile daemon startup
+- `pull_request_review` event handler
+- CI null-url edge case
+
+---
+
 ## [0.8.1] - 2026-02-25
 
 ### Changed
@@ -159,7 +174,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/joryeugene/gh-notify/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/joryeugene/gh-notify/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/joryeugene/gh-notify/compare/v0.8.1...v0.9.0
+[0.8.1]: https://github.com/joryeugene/gh-notify/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/joryeugene/gh-notify/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/joryeugene/gh-notify/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/joryeugene/gh-notify/compare/v0.5.0...v0.6.0
