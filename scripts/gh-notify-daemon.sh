@@ -21,6 +21,7 @@ touch "$EVENTS_LOG" "$SEEN_IDS"
 if [[ -s "$SEEN_IDS" ]] && grep -qv '|' "$SEEN_IDS" 2>/dev/null; then
     : > "$SEEN_IDS"
 fi
+[[ -s "$SEEN_IDS" ]] && sort -u -o "$SEEN_IDS" "$SEEN_IDS"
 
 # ── prevent duplicate instances ───────────────────────────────────────────────
 LOCK_FILE="${STATE_DIR}/.daemon.lock"
@@ -50,9 +51,9 @@ SELF=$(gh api /user --jq '.login' 2>/dev/null) || {
 # ── helpers ───────────────────────────────────────────────────────────────────
 send_notification() {
     local title="$1" subtitle="$2" message="$3"
-    title="${title//\\/}"; title="${title//\"/\'}"
-    subtitle="${subtitle//\\/}"; subtitle="${subtitle//\"/\'}"
-    message="${message//\\/}"; message="${message//\"/\'}"
+    title="${title//\\/\\\\}"; title="${title//\"/\\\"}"
+    subtitle="${subtitle//\\/\\\\}"; subtitle="${subtitle//\"/\\\"}"
+    message="${message//\\/\\\\}"; message="${message//\"/\\\"}"
     local _custom="${STATE_DIR}/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier"
     local _sent=false
     local _args=(-title "$title" -subtitle "$subtitle" -message "$message")
@@ -121,6 +122,49 @@ queue_sound() {
     BATCH_SOUNDS="${BATCH_SOUNDS:+$BATCH_SOUNDS }$s"
 }
 
+# ── PR review state helper ────────────────────────────────────────────────────
+# Sets event_icon, event_label, sound, html_url based on PR state + review data.
+# $1=subj_url  $2=pre-fetched pr_data  $3=self_filter (optional; excludes self-reviews)
+_pr_state_event() {
+    local subj_url="$1" pr_data="$2" self_filter="${3:-}"
+    local pr_html pr_merged pr_state reviews_data approver changer
+
+    pr_html=$(printf '%s' "$pr_data" | jq -r '.html_url // empty')
+    [[ -n "$pr_html" ]] && html_url="$pr_html"
+    pr_merged=$(printf '%s' "$pr_data" | jq -r '.merged')
+    pr_state=$(printf '%s' "$pr_data" | jq -r '.state')
+
+    if [[ "$pr_merged" == "true" ]]; then
+        event_icon="🔀"; event_label="Merged"; sound="Hero.aiff"; return
+    elif [[ "$pr_state" == "open" ]]; then
+        reviews_data=$(api_get "${subj_url}/reviews") || reviews_data=""
+        if [[ -n "$reviews_data" ]]; then
+            if [[ -n "$self_filter" ]]; then
+                approver=$(printf '%s' "$reviews_data" | jq -r \
+                    --arg self "$self_filter" \
+                    '[.[] | select(.state == "APPROVED" and .user.login != $self)] | last | .user.login // empty')
+                changer=$(printf '%s' "$reviews_data" | jq -r \
+                    --arg self "$self_filter" \
+                    '[.[] | select(.state == "CHANGES_REQUESTED" and .user.login != $self)] | last | .user.login // empty')
+            else
+                approver=$(printf '%s' "$reviews_data" | jq -r \
+                    '[.[] | select(.state == "APPROVED")] | last | .user.login // empty')
+                changer=$(printf '%s' "$reviews_data" | jq -r \
+                    '[.[] | select(.state == "CHANGES_REQUESTED")] | last | .user.login // empty')
+            fi
+        fi
+        if [[ -n "$approver" ]]; then
+            event_icon="✅"; event_label="Approved by ${approver}"; sound="Glass.aiff"
+        elif [[ -n "$changer" ]]; then
+            event_icon="🔁"; event_label="Changes requested by ${changer}"; sound="Basso.aiff"
+        else
+            event_icon="💬"; event_label="PR review comment"; sound="Tink.aiff"
+        fi
+    elif [[ "$pr_state" == "closed" ]]; then
+        event_icon="🔒"; event_label="PR closed"; sound="Funk.aiff"
+    fi
+}
+
 # ── process a single notification ─────────────────────────────────────────────
 process_notification() {
     local notif="$1"
@@ -179,47 +223,9 @@ process_notification() {
             ;;
         pull_request_review)
             if [[ "$subj_type" == "PullRequest" && -n "$subj_url" ]]; then
-                local pr_data pr_merged pr_state
+                local pr_data
                 pr_data=$(api_get "$subj_url") || pr_data=""
-                if [[ -n "$pr_data" ]]; then
-                    local pr_html
-                    pr_html=$(printf '%s' "$pr_data" | jq -r '.html_url // empty')
-                    [[ -n "$pr_html" ]] && html_url="$pr_html"
-                    pr_merged=$(printf '%s' "$pr_data" | jq -r '.merged')
-                    pr_state=$(printf '%s' "$pr_data" | jq -r '.state')
-
-                    if [[ "$pr_merged" == "true" ]]; then
-                        event_icon="🔀"
-                        event_label="Merged"
-                        sound="Hero.aiff"
-                    elif [[ "$pr_state" == "open" ]]; then
-                        local reviews_data approver changer
-                        reviews_data=$(api_get "${subj_url}/reviews") || reviews_data=""
-                        if [[ -n "$reviews_data" ]]; then
-                            approver=$(printf '%s' "$reviews_data" | jq -r \
-                                '[.[] | select(.state == "APPROVED")] | last | .user.login // empty')
-                            changer=$(printf '%s' "$reviews_data" | jq -r \
-                                '[.[] | select(.state == "CHANGES_REQUESTED")] | last | .user.login // empty')
-                        fi
-                        if [[ -n "$approver" ]]; then
-                            event_icon="✅"
-                            event_label="Approved by ${approver}"
-                            sound="Glass.aiff"
-                        elif [[ -n "$changer" ]]; then
-                            event_icon="🔁"
-                            event_label="Changes requested by ${changer}"
-                            sound="Basso.aiff"
-                        else
-                            event_icon="💬"
-                            event_label="PR review comment"
-                            sound="Tink.aiff"
-                        fi
-                    elif [[ "$pr_state" == "closed" ]]; then
-                        event_icon="🔒"
-                        event_label="PR closed"
-                        sound="Funk.aiff"
-                    fi
-                fi
+                [[ -n "$pr_data" ]] && _pr_state_event "$subj_url" "$pr_data"
             else
                 event_icon="💬"
                 event_label="Review comment"
@@ -233,55 +239,9 @@ process_notification() {
             ;;
         author)
             if [[ "$subj_type" == "PullRequest" && -n "$subj_url" ]]; then
-                local pr_data merged state
+                local pr_data
                 pr_data=$(api_get "$subj_url") || pr_data=""
-
-                if [[ -n "$pr_data" ]]; then
-                    local pr_html
-                    pr_html=$(printf '%s' "$pr_data" | jq -r '.html_url // empty')
-                    [[ -n "$pr_html" ]] && html_url="$pr_html"
-                    merged=$(printf '%s' "$pr_data" | jq -r '.merged')
-                    state=$(printf '%s' "$pr_data" | jq -r '.state')
-
-                    if [[ "$merged" == "true" ]]; then
-                        event_icon="🔀"
-                        event_label="Merged"
-                        sound="Hero.aiff"
-                    elif [[ "$state" == "open" ]]; then
-                        local reviews_data approver changer
-                        reviews_data=$(api_get "${subj_url}/reviews") || reviews_data=""
-
-                        if [[ -n "$reviews_data" ]]; then
-                            approver=$(printf '%s' "$reviews_data" | jq -r \
-                                --arg self "$SELF" \
-                                '[.[] | select(.state == "APPROVED" and .user.login != $self)] | last | .user.login // empty')
-                            changer=$(printf '%s' "$reviews_data" | jq -r \
-                                --arg self "$SELF" \
-                                '[.[] | select(.state == "CHANGES_REQUESTED" and .user.login != $self)] | last | .user.login // empty')
-                        else
-                            approver=""
-                            changer=""
-                        fi
-
-                        if [[ -n "$approver" ]]; then
-                            event_icon="✅"
-                            event_label="Approved by ${approver}"
-                            sound="Glass.aiff"
-                        elif [[ -n "$changer" ]]; then
-                            event_icon="🔁"
-                            event_label="Changes requested by ${changer}"
-                            sound="Basso.aiff"
-                        else
-                            event_icon="💬"
-                            event_label="PR comment"
-                            sound="Tink.aiff"
-                        fi
-                    elif [[ "$state" == "closed" ]]; then
-                        event_icon="🔒"
-                        event_label="PR closed"
-                        sound="Funk.aiff"
-                    fi
-                fi
+                [[ -n "$pr_data" ]] && _pr_state_event "$subj_url" "$pr_data" "$SELF"
             elif [[ "$subj_type" == "Issue" && -n "$subj_url" ]]; then
                 local issue_data issue_state
                 issue_data=$(api_get "$subj_url") || issue_data=""

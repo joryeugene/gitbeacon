@@ -17,6 +17,17 @@ mkdir -p "$STATE_DIR"
 [[ -f "$SFX_STATE" ]] || echo "ON" > "$SFX_STATE"
 touch "$EVENTS_LOG"
 
+# ── color constants ───────────────────────────────────────────────────────────
+C_GREEN='\033[1;32m'   # ✅ approved, 🟢 CI pass
+C_MAGENTA='\033[1;35m' # 🔀 merged, 🛡️ security
+C_CYAN='\033[1;36m'    # 💬 comment, 👥 team, 📬 invite
+C_YELLOW='\033[1;33m'  # 👀 review req, ⚠ warning, 🔁 changes, 🔒🔓 state, 🚦 approval
+C_BLUE='\033[1;34m'    # 📌 assigned
+C_RED='\033[1;31m'     # ❌ CI fail
+C_RED_DIM='\033[0;31m' # ⛔ CI cancelled (intentionally less prominent)
+C_DIM='\033[2m'        # ⚙ running, ⏭️ skipped, 🔔 default
+C_RESET='\033[0m'
+
 # ── spawn daemon (antifragile) ────────────────────────────────────────────────
 _lock_pid() { cat "${STATE_DIR}/.daemon.lock/pid" 2>/dev/null; }
 
@@ -70,24 +81,26 @@ while true; do
         while IFS= read -r _line; do
             _display="${_line%%$'\t'*}"
             case "$_display" in
-                *"✅"*) printf '\033[1;32m%s\033[0m\n' "$_display" ;;
-                *"🔀"*) printf '\033[1;35m%s\033[0m\n' "$_display" ;;
-                *"💬"*) printf '\033[1;36m%s\033[0m\n' "$_display" ;;
-                *"👀"*) printf '\033[1;33m%s\033[0m\n' "$_display" ;;
-                *"📌"*) printf '\033[1;34m%s\033[0m\n' "$_display" ;;
-                *"⚠"*)  printf '\033[1;33m%s\033[0m\n' "$_display" ;;
-                *"🔁"*) printf '\033[1;33m%s\033[0m\n' "$_display" ;;
-                *"❌"*) printf '\033[1;31m%s\033[0m\n' "$_display" ;;
-                *"🟢"*) printf '\033[1;32m%s\033[0m\n' "$_display" ;;
-                *"⚙"*)  printf '\033[2m%s\033[0m\n'   "$_display" ;;
-                *"⛔"*) printf '\033[0;31m%s\033[0m\n' "$_display" ;;
-                *"👥"*) printf '\033[1;36m%s\033[0m\n' "$_display" ;;
-                *"🔒"*) printf '\033[1;33m%s\033[0m\n' "$_display" ;;
-                *"🔓"*) printf '\033[1;33m%s\033[0m\n' "$_display" ;;
-                *"🛡"*)  printf '\033[1;35m%s\033[0m\n' "$_display" ;;
-                *"🚦"*)  printf '\033[1;33m%s\033[0m\n' "$_display" ;;
-                *"⏭️"*) printf '\033[2m%s\033[0m\n'   "$_display" ;;
-                *)       printf '\033[2m%s\033[0m\n'   "$_display" ;;
+                *"✅"*) printf "${C_GREEN}%s${C_RESET}\n"   "$_display" ;;
+                *"🔀"*) printf "${C_MAGENTA}%s${C_RESET}\n" "$_display" ;;
+                *"💬"*) printf "${C_CYAN}%s${C_RESET}\n"    "$_display" ;;
+                *"👀"*) printf "${C_YELLOW}%s${C_RESET}\n"  "$_display" ;;
+                *"📌"*) printf "${C_BLUE}%s${C_RESET}\n"    "$_display" ;;
+                *"⚠"*)  printf "${C_YELLOW}%s${C_RESET}\n"  "$_display" ;;
+                *"🔁"*) printf "${C_YELLOW}%s${C_RESET}\n"  "$_display" ;;
+                *"❌"*) printf "${C_RED}%s${C_RESET}\n"     "$_display" ;;
+                *"🟢"*) printf "${C_GREEN}%s${C_RESET}\n"   "$_display" ;;
+                *"⚙"*)  printf "${C_DIM}%s${C_RESET}\n"     "$_display" ;;
+                *"⛔"*) printf "${C_RED_DIM}%s${C_RESET}\n" "$_display" ;;
+                *"👥"*) printf "${C_CYAN}%s${C_RESET}\n"    "$_display" ;;
+                *"🔒"*) printf "${C_YELLOW}%s${C_RESET}\n"  "$_display" ;;
+                *"🔓"*) printf "${C_YELLOW}%s${C_RESET}\n"  "$_display" ;;
+                *"🛡"*)  printf "${C_MAGENTA}%s${C_RESET}\n" "$_display" ;;
+                *"🚦"*)  printf "${C_YELLOW}%s${C_RESET}\n"  "$_display" ;;
+                *"⏭️"*) printf "${C_DIM}%s${C_RESET}\n"     "$_display" ;;
+                *"📬"*) printf "${C_CYAN}%s${C_RESET}\n"    "$_display" ;;
+                *"🔔"*) printf "${C_DIM}%s${C_RESET}\n"     "$_display" ;;
+                *)       printf "${C_DIM}%s${C_RESET}\n"     "$_display" ;;
             esac
         done < <(tail -16 "$EVENTS_LOG")
     else
