@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # demo-scenario.sh — Write sample events to events.log for demo recordings.
-# Run this in the background, then launch gh-notify to see events arrive live.
+# Run this in the background, then launch gitbeacon to see events arrive live.
 #
 # Usage:
 #   just sync                          # deploy scripts first
 #   bash scripts/demo-scenario.sh &    # start event writer
-#   gh-notify                          # launch the bar
+#   gitbeacon                          # launch the bar
 #
 # Used by demo.tape (VHS) to produce assets/demo.gif.
 
 set -euo pipefail
 
-STATE_DIR="${HOME}/.config/gh-notify"
+STATE_DIR="${HOME}/.config/gitbeacon"
 EVENTS_LOG="${STATE_DIR}/events.log"
 SFX_STATE="${STATE_DIR}/sfx-state"
 LOCK_DIR="${STATE_DIR}/.daemon.lock"

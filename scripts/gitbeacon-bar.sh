@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gh-notify-bar.sh — Interactive bottom bar showing live GitHub PR notifications.
+# gitbeacon-bar.sh — Interactive bottom bar showing live GitHub PR notifications.
 # Spawns the daemon, displays event log, handles [s]ound / [c]lear / [q]uit.
 #
 # Layout: inline-header separator, event color, auto-sized to tput cols
@@ -7,7 +7,7 @@
 
 export TERM="${TERM:-xterm-256color}"
 
-STATE_DIR="${HOME}/.config/gh-notify"
+STATE_DIR="${HOME}/.config/gitbeacon"
 EVENTS_LOG="${STATE_DIR}/events.log"
 SFX_STATE="${STATE_DIR}/sfx-state"
 DAEMON_PID=""
@@ -36,7 +36,7 @@ _p=$(_lock_pid)
 if [[ -n "$_p" ]] && kill -0 "$_p" 2>/dev/null; then
     DAEMON_PID=$_p
 else
-    bash "${HOME}/.config/gh-notify/gh-notify-daemon.sh" &
+    bash "${HOME}/.config/gitbeacon/gitbeacon-daemon.sh" &
     DAEMON_PID=$!
     # Wait up to 2s — gives auth API calls time, and handles lock-race adoption
     _w=0
@@ -124,10 +124,10 @@ while true; do
     _count=$(grep -c '^\[' "$EVENTS_LOG" 2>/dev/null | tr -d ' '); _count="${_count:-0}"
     _cols=${COLUMNS:-$(tput cols 2>/dev/null)}
     (( ${_cols:-0} > 0 )) || _cols=80
-    _label="·:·[ gh-notify · ${_count} ]·:·"
+    _label="·:·[ gitbeacon · ${_count} ]·:·"
     _pad=$(( (_cols - ${#_label}) / 2 ))
     [[ $_pad -lt 0 ]] && _pad=0
-    printf "%${_pad}s\033[2m·:·[\033[0m gh-notify · %s \033[2m]·:·\033[0m\n" "" "$_count"
+    printf "%${_pad}s\033[2m·:·[\033[0m gitbeacon · %s \033[2m]·:·\033[0m\n" "" "$_count"
 
     # Stats line: per-icon session totals + top repos (omitted when log is empty)
     if [[ -s "$EVENTS_LOG" ]]; then
@@ -187,14 +187,14 @@ while true; do
             : > "$EVENTS_LOG"
             ;;
         r|R)
-            pkill -f gh-notify-daemon 2>/dev/null || true
+            pkill -f gitbeacon-daemon 2>/dev/null || true
             # Wait for old daemon's EXIT trap to release the lock (max 3s)
             _w=0
             while [[ -d "${STATE_DIR}/.daemon.lock" && $_w -lt 30 ]]; do
                 sleep 0.1
                 (( _w++ )) || true
             done
-            bash "${HOME}/.config/gh-notify/gh-notify-daemon.sh" &
+            bash "${HOME}/.config/gitbeacon/gitbeacon-daemon.sh" &
             DAEMON_PID=$!
             ;;
         o|O)

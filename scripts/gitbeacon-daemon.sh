@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# gh-notify-daemon.sh — Background GitHub notification watcher.
+# gitbeacon-daemon.sh — Background GitHub notification watcher.
 # Polls /notifications every 30s with If-Modified-Since conditional requests.
 # Fires macOS popups + sounds per event type, appends to events.log.
 #
-# State: ~/.config/gh-notify/{events.log,sfx-state,seen-ids}
-# Started by: gh-notify-bar.sh
+# State: ~/.config/gitbeacon/{events.log,sfx-state,seen-ids}
+# Started by: gitbeacon-bar.sh
 
-STATE_DIR="${HOME}/.config/gh-notify"
+STATE_DIR="${HOME}/.config/gitbeacon"
 EVENTS_LOG="${STATE_DIR}/events.log"
 SFX_STATE="${STATE_DIR}/sfx-state"
 SEEN_IDS="${STATE_DIR}/seen-ids"
@@ -54,7 +54,7 @@ send_notification() {
     title="${title//\\/\\\\}"; title="${title//\"/\\\"}"
     subtitle="${subtitle//\\/\\\\}"; subtitle="${subtitle//\"/\\\"}"
     message="${message//\\/\\\\}"; message="${message//\"/\\\"}"
-    local _custom="${STATE_DIR}/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier"
+    local _custom="${STATE_DIR}/gitbeacon-notifier.app/Contents/MacOS/gitbeacon-notifier"
     local _sent=false
     local _args=(-title "$title" -subtitle "$subtitle" -message "$message")
     if [[ -x "$_custom" ]]; then

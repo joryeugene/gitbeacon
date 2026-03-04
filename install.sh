@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# gh-notify installer
+# gitbeacon installer
 # Installs background GitHub notification daemon + tmux bar for macOS.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/joryeugene/gh-notify/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/joryeugene/gitbeacon/main/install.sh | bash
 #   # or from local clone:
 #   ./install.sh
 
@@ -22,8 +22,8 @@ ok()    { echo -e "  ${GREEN}✓${RESET}  $*"; }
 warn()  { echo -e "  ${YELLOW}!${RESET}  $*"; }
 die()   { echo -e "  ${RED}✗${RESET}  $*"; exit 1; }
 
-STATE_DIR="${HOME}/.config/gh-notify"
-GITHUB_RAW="https://raw.githubusercontent.com/joryeugene/gh-notify/main"
+STATE_DIR="${HOME}/.config/gitbeacon"
+GITHUB_RAW="https://raw.githubusercontent.com/joryeugene/gitbeacon/main"
 
 # Detect local vs remote execution (empty BASH_SOURCE[0] when piped through bash)
 if [[ -n "${BASH_SOURCE[0]:-}" ]] && [[ -f "${BASH_SOURCE[0]}" ]]; then
@@ -35,7 +35,7 @@ else
 fi
 
 echo
-echo -e "${BOLD}gh-notify installer${RESET}"
+echo -e "${BOLD}gitbeacon installer${RESET}"
 echo
 
 # -------------------------------------------------------------------
@@ -70,13 +70,13 @@ fi
 if command -v osascript &>/dev/null; then
     ok "osascript found (macOS confirmed)"
 else
-    die "osascript not found. gh-notify requires macOS for notifications and sounds."
+    die "osascript not found. gitbeacon requires macOS for notifications and sounds."
 fi
 
 if command -v clang &>/dev/null; then
-    ok "clang found (needed to build GH Notifier app)"
+    ok "clang found (needed to build GitBeacon app)"
 else
-    warn "clang not found — GH Notifier app won't build. Install CLT: xcode-select --install"
+    warn "clang not found — GitBeacon app won't build. Install CLT: xcode-select --install"
 fi
 
 if [[ "$FAIL" -eq 1 ]]; then
@@ -87,7 +87,7 @@ fi
 echo
 
 # -------------------------------------------------------------------
-# 2. Copy scripts to ~/.config/gh-notify/
+# 2. Copy scripts to ~/.config/gitbeacon/
 # -------------------------------------------------------------------
 info "Installing scripts to ${STATE_DIR}..."
 
@@ -95,22 +95,22 @@ mkdir -p "$STATE_DIR"
 
 if [[ "$IS_REMOTE" == "true" ]]; then
     info "Remote install — downloading scripts from GitHub..."
-    curl -fsSL "${GITHUB_RAW}/scripts/gh-notify-daemon.sh" -o "${STATE_DIR}/gh-notify-daemon.sh" || die "Download failed"
-    curl -fsSL "${GITHUB_RAW}/scripts/gh-notify-bar.sh"    -o "${STATE_DIR}/gh-notify-bar.sh"    || die "Download failed"
+    curl -fsSL "${GITHUB_RAW}/scripts/gitbeacon-daemon.sh" -o "${STATE_DIR}/gitbeacon-daemon.sh" || die "Download failed"
+    curl -fsSL "${GITHUB_RAW}/scripts/gitbeacon-bar.sh"    -o "${STATE_DIR}/gitbeacon-bar.sh"    || die "Download failed"
 else
-    [[ -d "${SCRIPT_DIR}/scripts" ]] || die "scripts/ not found. Run from the gh-notify repo root."
-    cp "${SCRIPT_DIR}/scripts/gh-notify-daemon.sh" "${STATE_DIR}/gh-notify-daemon.sh"
-    cp "${SCRIPT_DIR}/scripts/gh-notify-bar.sh"    "${STATE_DIR}/gh-notify-bar.sh"
+    [[ -d "${SCRIPT_DIR}/scripts" ]] || die "scripts/ not found. Run from the gitbeacon repo root."
+    cp "${SCRIPT_DIR}/scripts/gitbeacon-daemon.sh" "${STATE_DIR}/gitbeacon-daemon.sh"
+    cp "${SCRIPT_DIR}/scripts/gitbeacon-bar.sh"    "${STATE_DIR}/gitbeacon-bar.sh"
 fi
-chmod +x "${STATE_DIR}/gh-notify-daemon.sh" "${STATE_DIR}/gh-notify-bar.sh"
+chmod +x "${STATE_DIR}/gitbeacon-daemon.sh" "${STATE_DIR}/gitbeacon-bar.sh"
 
-ok "Copied gh-notify-daemon.sh"
-ok "Copied gh-notify-bar.sh"
+ok "Copied gitbeacon-daemon.sh"
+ok "Copied gitbeacon-bar.sh"
 
 # If a bar is already running, kill it so it picks up the new scripts on next launch
-if pgrep -f gh-notify-bar &>/dev/null; then
-    pkill -f gh-notify-bar 2>/dev/null || true
-    ok "Stopped running bar — relaunch with: gh-notify"
+if pgrep -f gitbeacon-bar &>/dev/null; then
+    pkill -f gitbeacon-bar 2>/dev/null || true
+    ok "Stopped running bar — relaunch with: gitbeacon"
 fi
 
 # Init state files (idempotent)
@@ -121,20 +121,20 @@ ok "State directory ready: ${STATE_DIR}"
 echo
 
 # -------------------------------------------------------------------
-# 3. Install gh-notify CLI command
+# 3. Install gitbeacon CLI command
 # -------------------------------------------------------------------
-info "Installing gh-notify command..."
+info "Installing gitbeacon command..."
 
 BIN_DIR="${HOME}/.local/bin"
 mkdir -p "$BIN_DIR"
 
-cat > "${BIN_DIR}/gh-notify" << 'EOF'
+cat > "${BIN_DIR}/gitbeacon" << 'EOF'
 #!/usr/bin/env bash
-exec bash "${HOME}/.config/gh-notify/gh-notify-bar.sh" "$@"
+exec bash "${HOME}/.config/gitbeacon/gitbeacon-bar.sh" "$@"
 EOF
-chmod +x "${BIN_DIR}/gh-notify"
+chmod +x "${BIN_DIR}/gitbeacon"
 
-ok "Installed: ${BIN_DIR}/gh-notify"
+ok "Installed: ${BIN_DIR}/gitbeacon"
 
 # Warn if ~/.local/bin not in PATH
 if ! echo "$PATH" | tr ':' '\n' | grep -qF "$BIN_DIR"; then
@@ -146,12 +146,12 @@ fi
 echo
 
 # -------------------------------------------------------------------
-# 3.5. Build custom notifier bundle (gh-notify-notifier.app)
+# 3.5. Build custom notifier bundle (gitbeacon-notifier.app)
 # -------------------------------------------------------------------
-info "Building gh-notify notifier app (KingBee icon)..."
+info "Building gitbeacon notifier app (KingBee icon)..."
 
-APP_DEST="${STATE_DIR}/gh-notify-notifier.app"
-NOTIFIER_BUNDLE_ID="com.joryeugene.gh-notify"
+APP_DEST="${STATE_DIR}/gitbeacon-notifier.app"
+NOTIFIER_BUNDLE_ID="com.joryeugene.gitbeacon"
 _skip_notifier=false
 
 # Idempotent: skip if already built with our bundle ID, display name, AND ObjC binary
@@ -163,9 +163,9 @@ if [[ -d "$APP_DEST" ]]; then
     _existing_exec=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" \
         "${APP_DEST}/Contents/Info.plist" 2>/dev/null || true)
     if [[ "$_existing_id" == "$NOTIFIER_BUNDLE_ID" ]] && \
-       [[ "$_existing_display" == "GH Notifier" ]] && \
-       [[ "$_existing_exec" == "gh-notify-notifier" ]] && \
-       [[ -x "${APP_DEST}/Contents/MacOS/gh-notify-notifier" ]]; then
+       [[ "$_existing_display" == "GitBeacon" ]] && \
+       [[ "$_existing_exec" == "gitbeacon-notifier" ]] && \
+       [[ -x "${APP_DEST}/Contents/MacOS/gitbeacon-notifier" ]]; then
         ok "Notifier app already built — skipping"
         _skip_notifier=true
     fi
@@ -186,31 +186,31 @@ if ! $_skip_notifier; then
     _src_plist=""
     if [[ "$IS_REMOTE" == "true" ]]; then
         info "Downloading notifier sources..."
-        if ! curl -fsSL "${GITHUB_RAW}/scripts/gh-notify-notifier.m" \
-                -o "${BUILD_DIR}/gh-notify-notifier.m" 2>/dev/null; then
+        if ! curl -fsSL "${GITHUB_RAW}/scripts/gitbeacon-notifier.m" \
+                -o "${BUILD_DIR}/gitbeacon-notifier.m" 2>/dev/null; then
             warn "Source download failed — skipping notifier build. Run: just build-notifier"
             _skip_notifier=true
         else
-            _src_m="${BUILD_DIR}/gh-notify-notifier.m"
+            _src_m="${BUILD_DIR}/gitbeacon-notifier.m"
         fi
-        if ! curl -fsSL "${GITHUB_RAW}/scripts/gh-notify-notifier.plist" \
-                -o "${BUILD_DIR}/gh-notify-notifier.plist" 2>/dev/null; then
+        if ! curl -fsSL "${GITHUB_RAW}/scripts/gitbeacon-notifier.plist" \
+                -o "${BUILD_DIR}/gitbeacon-notifier.plist" 2>/dev/null; then
             warn "Plist download failed — skipping notifier build. Run: just build-notifier"
             _skip_notifier=true
         else
-            _src_plist="${BUILD_DIR}/gh-notify-notifier.plist"
+            _src_plist="${BUILD_DIR}/gitbeacon-notifier.plist"
         fi
     else
-        if [[ -f "${SCRIPT_DIR}/scripts/gh-notify-notifier.m" ]]; then
-            _src_m="${SCRIPT_DIR}/scripts/gh-notify-notifier.m"
+        if [[ -f "${SCRIPT_DIR}/scripts/gitbeacon-notifier.m" ]]; then
+            _src_m="${SCRIPT_DIR}/scripts/gitbeacon-notifier.m"
         else
-            warn "scripts/gh-notify-notifier.m not found — skipping notifier build. Run: just build-notifier"
+            warn "scripts/gitbeacon-notifier.m not found — skipping notifier build. Run: just build-notifier"
             _skip_notifier=true
         fi
-        if [[ -f "${SCRIPT_DIR}/scripts/gh-notify-notifier.plist" ]]; then
-            _src_plist="${SCRIPT_DIR}/scripts/gh-notify-notifier.plist"
+        if [[ -f "${SCRIPT_DIR}/scripts/gitbeacon-notifier.plist" ]]; then
+            _src_plist="${SCRIPT_DIR}/scripts/gitbeacon-notifier.plist"
         else
-            warn "scripts/gh-notify-notifier.plist not found — skipping notifier build. Run: just build-notifier"
+            warn "scripts/gitbeacon-notifier.plist not found — skipping notifier build. Run: just build-notifier"
             _skip_notifier=true
         fi
     fi
@@ -248,7 +248,7 @@ fi
 # Build .iconset → .icns
 if ! $_skip_notifier; then
     info "Building iconset..."
-    ICONSET="${BUILD_DIR}/gh-notify.iconset"
+    ICONSET="${BUILD_DIR}/gitbeacon.iconset"
     mkdir -p "$ICONSET"
     for _sz in 16 32 64 128 256 512 1024; do
         sips -z "$_sz" "$_sz" "${BUILD_DIR}/icon-1024.png" \
@@ -259,7 +259,7 @@ if ! $_skip_notifier; then
     cp "${ICONSET}/icon_256x256.png"   "${ICONSET}/icon_128x128@2x.png"
     cp "${ICONSET}/icon_512x512.png"   "${ICONSET}/icon_256x256@2x.png"
     cp "${ICONSET}/icon_1024x1024.png" "${ICONSET}/icon_512x512@2x.png"
-    iconutil -c icns "$ICONSET" --output "${BUILD_DIR}/gh-notify.icns"
+    iconutil -c icns "$ICONSET" --output "${BUILD_DIR}/gitbeacon.icns"
 fi
 
 # Compile ObjC notification binary
@@ -269,7 +269,7 @@ if ! $_skip_notifier; then
             -framework AppKit \
             -framework UserNotifications \
             -target arm64-apple-macosx14.0 \
-            -o "${BUILD_DIR}/gh-notify-notifier" \
+            -o "${BUILD_DIR}/gitbeacon-notifier" \
             "$_src_m" 2>/dev/null; then
         warn "Compile failed — skipping notifier build. Run: just build-notifier"
         _skip_notifier=true
@@ -282,9 +282,9 @@ if ! $_skip_notifier; then
     rm -rf "$APP_DEST"
     mkdir -p "${APP_DEST}/Contents/MacOS"
     mkdir -p "${APP_DEST}/Contents/Resources"
-    cp "${BUILD_DIR}/gh-notify-notifier" "${APP_DEST}/Contents/MacOS/gh-notify-notifier"
-    chmod +x "${APP_DEST}/Contents/MacOS/gh-notify-notifier"
-    cp "${BUILD_DIR}/gh-notify.icns" "${APP_DEST}/Contents/Resources/gh-notify.icns"
+    cp "${BUILD_DIR}/gitbeacon-notifier" "${APP_DEST}/Contents/MacOS/gitbeacon-notifier"
+    chmod +x "${APP_DEST}/Contents/MacOS/gitbeacon-notifier"
+    cp "${BUILD_DIR}/gitbeacon.icns" "${APP_DEST}/Contents/Resources/gitbeacon.icns"
     cp "$_src_plist" "${APP_DEST}/Contents/Info.plist"
 
     info "Ad-hoc signing..."
@@ -322,12 +322,12 @@ if ! $_skip_notifier; then
 
     info "Triggering first-launch permission prompt..."
     open -n -W "$APP_DEST" --args \
-        -title "GH Notifier" \
+        -title "GitBeacon" \
         -message "Allow notifications — click Allow in the dialog above" \
         2>/dev/null || true
 
     ok "Notifier app built: ${APP_DEST}"
-    info "Check System Settings > Notifications > GH Notifier → set style to Banners"
+    info "Check System Settings > Notifications > GitBeacon → set style to Banners"
 fi
 
 echo
@@ -341,18 +341,18 @@ echo
 VFAIL=0
 
 # Check daemon script is executable
-if [[ -x "${STATE_DIR}/gh-notify-daemon.sh" ]]; then
-    ok "gh-notify-daemon.sh is executable"
+if [[ -x "${STATE_DIR}/gitbeacon-daemon.sh" ]]; then
+    ok "gitbeacon-daemon.sh is executable"
 else
-    warn "gh-notify-daemon.sh is not executable"
+    warn "gitbeacon-daemon.sh is not executable"
     VFAIL=1
 fi
 
 # Check bar script is executable
-if [[ -x "${STATE_DIR}/gh-notify-bar.sh" ]]; then
-    ok "gh-notify-bar.sh is executable"
+if [[ -x "${STATE_DIR}/gitbeacon-bar.sh" ]]; then
+    ok "gitbeacon-bar.sh is executable"
 else
-    warn "gh-notify-bar.sh is not executable"
+    warn "gitbeacon-bar.sh is not executable"
     VFAIL=1
 fi
 
@@ -365,20 +365,20 @@ else
 fi
 
 # Send test notification — check delivery and open System Settings if denied
-_custom="${STATE_DIR}/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier"
+_custom="${STATE_DIR}/gitbeacon-notifier.app/Contents/MacOS/gitbeacon-notifier"
 if [[ -x "$_custom" ]]; then
-    if "$_custom" -title "GH Notifier" \
+    if "$_custom" -title "GitBeacon" \
             -message "If you see this, notifications are working!" 2>/dev/null; then
-        ok "macOS notifications: GH Notifier — banner delivered"
+        ok "macOS notifications: GitBeacon — banner delivered"
     else
-        warn "GH Notifier notifications are off or not yet permitted"
+        warn "GitBeacon notifications are off or not yet permitted"
         info "Opening System Settings > Notifications..."
         open "x-apple.systempreferences:com.apple.preference.notifications" 2>/dev/null || true
-        info "Find GH Notifier and set style to Banners or Alerts, then press [t] in the bar to confirm"
+        info "Find GitBeacon and set style to Banners or Alerts, then press [t] in the bar to confirm"
         VFAIL=1
     fi
 else
-    osascript -e 'display notification "Notifications working!" with title "GH Notifier"' 2>/dev/null || true
+    osascript -e 'display notification "Notifications working!" with title "GitBeacon"' 2>/dev/null || true
     ok "macOS notifications: osascript fallback"
 fi
 
@@ -391,8 +391,8 @@ if [[ "$VFAIL" -eq 0 ]]; then
     echo -e "${BOLD}Installation complete!${RESET}"
     echo
     echo -e "  ${DIM}Test a sound:   afplay /System/Library/Sounds/Glass.aiff${RESET}"
-    echo -e "  ${DIM}Test a popup:   osascript -e 'display notification \"Ready\" with title \"gh-notify\"'${RESET}"
-    echo -e "  ${DIM}Launch:         gh-notify${RESET}"
+    echo -e "  ${DIM}Test a popup:   osascript -e 'display notification \"Ready\" with title \"gitbeacon\"'${RESET}"
+    echo -e "  ${DIM}Launch:         gitbeacon${RESET}"
 else
     warn "Installation completed with warnings above."
     echo -e "  ${DIM}Run manual checks to resolve issues.${RESET}"

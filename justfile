@@ -1,34 +1,34 @@
-# gh-notify development and release workflow
+# gitbeacon development and release workflow
 
 default:
     @just --list
 
 # Lint all shell scripts with shellcheck
 lint:
-    shellcheck scripts/gh-notify-daemon.sh scripts/gh-notify-bar.sh scripts/demo-scenario.sh install.sh
+    shellcheck scripts/gitbeacon-daemon.sh scripts/gitbeacon-bar.sh scripts/demo-scenario.sh install.sh
 
-# Copy scripts to ~/.config/gh-notify/ — fast dev deploy, no prereq checks
+# Copy scripts to ~/.config/gitbeacon/ — fast dev deploy, no prereq checks
 # Use after any edit to scripts/; press [r] in the bar to reload
 sync:
-    @mkdir -p "${HOME}/.config/gh-notify"
-    @cp scripts/gh-notify-daemon.sh "${HOME}/.config/gh-notify/gh-notify-daemon.sh"
-    @cp scripts/gh-notify-bar.sh    "${HOME}/.config/gh-notify/gh-notify-bar.sh"
-    @chmod +x "${HOME}/.config/gh-notify/gh-notify-daemon.sh" \
-              "${HOME}/.config/gh-notify/gh-notify-bar.sh"
-    @echo "synced → ~/.config/gh-notify/  (press [r] in bar to reload)"
+    @mkdir -p "${HOME}/.config/gitbeacon"
+    @cp scripts/gitbeacon-daemon.sh "${HOME}/.config/gitbeacon/gitbeacon-daemon.sh"
+    @cp scripts/gitbeacon-bar.sh    "${HOME}/.config/gitbeacon/gitbeacon-bar.sh"
+    @chmod +x "${HOME}/.config/gitbeacon/gitbeacon-daemon.sh" \
+              "${HOME}/.config/gitbeacon/gitbeacon-bar.sh"
+    @echo "synced → ~/.config/gitbeacon/  (press [r] in bar to reload)"
 
 # Send a test notification with custom text
 # Usage: just notify "your message here"
 notify msg:
     #!/usr/bin/env bash
     set -euo pipefail
-    _custom="${HOME}/.config/gh-notify/gh-notify-notifier.app/Contents/MacOS/gh-notify-notifier"
+    _custom="${HOME}/.config/gitbeacon/gitbeacon-notifier.app/Contents/MacOS/gitbeacon-notifier"
     _sent=false
     if [[ -x "$_custom" ]]; then
-        "$_custom" -title "gh-notify" -message "{{msg}}" 2>/dev/null && _sent=true || true
+        "$_custom" -title "gitbeacon" -message "{{msg}}" 2>/dev/null && _sent=true || true
     fi
     if ! $_sent; then
-        osascript -e "display notification \"{{msg}}\" with title \"gh-notify\"" 2>/dev/null && _sent=true || true
+        osascript -e "display notification \"{{msg}}\" with title \"gitbeacon\"" 2>/dev/null && _sent=true || true
     fi
     if $_sent; then
         echo "✓  notification sent"
@@ -44,12 +44,12 @@ install:
 # Remove all installed files and state
 uninstall:
     @echo "Stopping any running processes..."
-    @pkill -f gh-notify-daemon 2>/dev/null || true
-    @pkill -f gh-notify-bar 2>/dev/null || true
+    @pkill -f gitbeacon-daemon 2>/dev/null || true
+    @pkill -f gitbeacon-bar 2>/dev/null || true
     @echo "Removing state directory..."
-    @rm -rf "${HOME}/.config/gh-notify"
+    @rm -rf "${HOME}/.config/gitbeacon"
     @echo "Removing CLI wrapper..."
-    @rm -f "${HOME}/.local/bin/gh-notify"
+    @rm -f "${HOME}/.local/bin/gitbeacon"
     @echo "Uninstalled."
 
 # Print a draft CHANGELOG section from commits since last tag
@@ -69,7 +69,7 @@ notes:
         git log --pretty="format:- %s" --reverse "${LAST_TAG}..HEAD"
     fi
 
-# Build a custom gh-notify-notifier.app with KingBee icon.
+# Build a custom gitbeacon-notifier.app with KingBee icon.
 # Compiles a minimal ObjC notification binary and bundles it with our icon + bundle ID
 # so the left-side app icon in macOS notifications shows the bee, not terminal-notifier's tree.
 #
@@ -81,14 +81,14 @@ build-notifier:
     set -euo pipefail
 
     [[ -f "assets/icon.svg" ]] || { echo "✗  assets/icon.svg not found — run from repo root"; exit 1; }
-    [[ -f "scripts/gh-notify-notifier.m" ]] || { echo "✗  scripts/gh-notify-notifier.m not found"; exit 1; }
-    [[ -f "scripts/gh-notify-notifier.plist" ]] || { echo "✗  scripts/gh-notify-notifier.plist not found"; exit 1; }
+    [[ -f "scripts/gitbeacon-notifier.m" ]] || { echo "✗  scripts/gitbeacon-notifier.m not found"; exit 1; }
+    [[ -f "scripts/gitbeacon-notifier.plist" ]] || { echo "✗  scripts/gitbeacon-notifier.plist not found"; exit 1; }
     command -v clang &>/dev/null || { echo "✗  clang not found — install CLT: xcode-select --install"; exit 1; }
     command -v rsvg-convert &>/dev/null || { echo "✗  rsvg-convert not found — run: brew install librsvg"; exit 1; }
 
-    STATE_DIR="${HOME}/.config/gh-notify"
+    STATE_DIR="${HOME}/.config/gitbeacon"
     BUILD_DIR="${STATE_DIR}/.build"
-    APP_DEST="${STATE_DIR}/gh-notify-notifier.app"
+    APP_DEST="${STATE_DIR}/gitbeacon-notifier.app"
 
     mkdir -p "$BUILD_DIR"
 
@@ -96,7 +96,7 @@ build-notifier:
     rsvg-convert -w 1024 -h 1024 assets/icon.svg -o "${BUILD_DIR}/icon-1024.png"
 
     echo "→ Building iconset..."
-    ICONSET="${BUILD_DIR}/gh-notify.iconset"
+    ICONSET="${BUILD_DIR}/gitbeacon.iconset"
     mkdir -p "$ICONSET"
     for size in 16 32 64 128 256 512 1024; do
         sips -z "$size" "$size" "${BUILD_DIR}/icon-1024.png" \
@@ -107,24 +107,24 @@ build-notifier:
     cp "${ICONSET}/icon_256x256.png"   "${ICONSET}/icon_128x128@2x.png"
     cp "${ICONSET}/icon_512x512.png"   "${ICONSET}/icon_256x256@2x.png"
     cp "${ICONSET}/icon_1024x1024.png" "${ICONSET}/icon_512x512@2x.png"
-    iconutil -c icns "$ICONSET" --output "${BUILD_DIR}/gh-notify.icns"
+    iconutil -c icns "$ICONSET" --output "${BUILD_DIR}/gitbeacon.icns"
 
     echo "→ Compiling notifier binary..."
     clang -fobjc-arc \
         -framework AppKit \
         -framework UserNotifications \
         -target arm64-apple-macosx14.0 \
-        -o "${BUILD_DIR}/gh-notify-notifier" \
-        scripts/gh-notify-notifier.m
+        -o "${BUILD_DIR}/gitbeacon-notifier" \
+        scripts/gitbeacon-notifier.m
 
     echo "→ Assembling app bundle..."
     rm -rf "$APP_DEST"
     mkdir -p "${APP_DEST}/Contents/MacOS"
     mkdir -p "${APP_DEST}/Contents/Resources"
-    cp "${BUILD_DIR}/gh-notify-notifier" "${APP_DEST}/Contents/MacOS/gh-notify-notifier"
-    chmod +x "${APP_DEST}/Contents/MacOS/gh-notify-notifier"
-    cp "${BUILD_DIR}/gh-notify.icns" "${APP_DEST}/Contents/Resources/gh-notify.icns"
-    cp scripts/gh-notify-notifier.plist "${APP_DEST}/Contents/Info.plist"
+    cp "${BUILD_DIR}/gitbeacon-notifier" "${APP_DEST}/Contents/MacOS/gitbeacon-notifier"
+    chmod +x "${APP_DEST}/Contents/MacOS/gitbeacon-notifier"
+    cp "${BUILD_DIR}/gitbeacon.icns" "${APP_DEST}/Contents/Resources/gitbeacon.icns"
+    cp scripts/gitbeacon-notifier.plist "${APP_DEST}/Contents/Info.plist"
 
     echo "→ Ad-hoc signing..."
     codesign --force --deep --sign - "$APP_DEST"
@@ -151,7 +151,7 @@ build-notifier:
     for _ni in $(seq 0 $(( _nc_count - 1 ))); do
         _nb=$(/usr/libexec/PlistBuddy -c "Print :apps:${_ni}:bundle-id" \
             "$_nc_prefs" 2>/dev/null || true)
-        if [[ "$_nb" == "com.joryeugene.gh-notify" ]]; then
+        if [[ "$_nb" == "com.joryeugene.gitbeacon" ]]; then
             /usr/libexec/PlistBuddy -c "Delete :apps:${_ni}" "$_nc_prefs" 2>/dev/null || true
             break
         fi
@@ -161,12 +161,12 @@ build-notifier:
 
     echo "→ Triggering first-launch permission prompt..."
     open -n -W "$APP_DEST" --args \
-        -title "GH Notifier" \
+        -title "GitBeacon" \
         -message "Allow notifications — click Allow in the dialog above" \
         2>/dev/null || true
 
     echo "✓  ${APP_DEST} ready"
-    echo "   Check System Settings > Notifications > GH Notifier and set style to Banners."
+    echo "   Check System Settings > Notifications > GitBeacon and set style to Banners."
 
 # Tag and push a release: lints, syncs locally, tags, pushes, creates draft GitHub release
 # Prereq: CHANGELOG.md already updated for the version; commit all changes first
@@ -179,7 +179,7 @@ release version:
         || { echo "✗  [{{version}}] not found in CHANGELOG.md — update it first"; exit 1; }
     echo "→ Linting..."
     just lint
-    echo "→ Syncing scripts to ~/.config/gh-notify/..."
+    echo "→ Syncing scripts to ~/.config/gitbeacon/..."
     just sync
     echo "→ Tagging v{{version}}..."
     git tag -a "v{{version}}" -m "v{{version}}"
@@ -187,4 +187,4 @@ release version:
     echo "→ Creating draft release on GitHub..."
     NOTES=$(awk '/^## \[{{version}}\]/{found=1; next} found && /^---/{exit} found{print}' CHANGELOG.md)
     gh release create "v{{version}}" --title "v{{version}}" --draft --notes "$NOTES"
-    echo "✓  Draft release ready: https://github.com/joryeugene/gh-notify/releases"
+    echo "✓  Draft release ready: https://github.com/joryeugene/gitbeacon/releases"
