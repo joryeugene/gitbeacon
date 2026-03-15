@@ -9,6 +9,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **macOS menu bar app** (`GitBeaconApp/`): native SwiftUI `MenuBarExtra` that wraps the daemon. Click the bell icon to see recent events, toggle sound, and quit. No terminal required.
+  - Event log watcher using kqueue (`DispatchSource`) with 5-second timer fallback for file rotation
+  - Daemon lifecycle management: spawn, adopt existing, health check every 10s, kill on quit
+  - Click any event row to open the GitHub URL in the default browser
+  - `build/package-app.sh` assembles a proper `.app` bundle with `Info.plist` and ad-hoc codesigning
+- Daemon spawned with Homebrew bash 5 (not `/bin/bash` 3.2) to support associative arrays and `-v` tests used by the daemon script
+
 ---
 
 ## [1.0.0] - 2026-03-04

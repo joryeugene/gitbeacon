@@ -16,6 +16,27 @@ Stay in the hive. macOS-native GitHub notifications with a live terminal bar.
   <img src="assets/demo.gif" alt="gitbeacon demo" width="600">
 </p>
 
+## macOS Menu Bar App
+
+For users who prefer a native app over the terminal, gitbeacon ships as a macOS menu bar app. Download, drag to Applications, double-click. No terminal, no `brew`, no prerequisites beyond `gh auth login`.
+
+The app shows a bell icon in the menu bar. Click it to see a popover with your recent GitHub notification events. The same proven daemon runs underneath. Click any event row to open it in your browser.
+
+**Build from source:**
+
+```bash
+cd GitBeaconApp
+swift build
+./build/package-app.sh
+open .build/GitBeacon.app
+```
+
+The app spawns the daemon on launch, adopts an existing daemon if one is already running, and kills it on quit. Sound toggle, event list, and status indicator are all in the popover.
+
+> Requires macOS 14+ (Sonoma) and bash 4+ (Homebrew installs this automatically).
+
+---
+
 ## macOS Notification Permissions
 
 gitbeacon ships a custom notification app (`gitbeacon-notifier.app`), a minimal Objective-C `.app` bundle with the KingBee bee icon and bundle ID `com.joryeugene.gitbeacon`. It appears in System Settings as **GitBeacon**.
