@@ -17,11 +17,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - **macOS menu bar app** (`GitBeaconApp/`): native SwiftUI `MenuBarExtra` that wraps the daemon. Click the bell icon to see recent events, toggle sound, and quit. No terminal required.
   - Event log watcher using kqueue (`DispatchSource`) with 5-second timer fallback for file rotation
   - Daemon lifecycle management: spawn, adopt existing, health check every 10s, kill on quit
+  - Single-instance guard: second launch exits immediately instead of creating duplicate menu bar icons
   - Click any event row to open the GitHub URL in the default browser
-  - `build/package-app.sh` assembles a proper `.app` bundle with `Info.plist` and ad-hoc codesigning
+  - App icon (KingBee bee) in Finder, Spotlight, and DMG via `AppIcon.icns`
+  - `build/package-app.sh` assembles a proper `.app` bundle with icon, `Info.plist`, and ad-hoc codesigning
   - `build/package-dmg.sh` creates a distributable DMG with drag-to-Applications install
 - justfile recipes: `build-app` (universal binary), `package-app`, `package-dmg`
 - CI workflow (`.github/workflows/ci.yml`): shellcheck lint + swift build on macos-latest
+- README: Gatekeeper "unidentified developer" right-click workaround
 - Daemon spawned with Homebrew bash 5 (not `/bin/bash` 3.2) to support associative arrays and `-v` tests used by the daemon script
 
 ---
