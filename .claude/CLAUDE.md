@@ -13,6 +13,7 @@ GitBeaconApp/                 — macOS menu bar app (SwiftUI MenuBarExtra, wrap
   Package.swift               — SPM manifest, macOS 14+
   Sources/GitBeaconApp/       — App.swift, DaemonManager, EventLogWatcher, MenuBarView, etc.
   build/package-app.sh        — assembles .app bundle from SPM build output
+  build/package-dmg.sh        — creates distributable DMG with drag-to-Applications install
 ```
 
 ## Release Workflow
@@ -63,6 +64,9 @@ Review at `https://github.com/joryeugene/gitbeacon/releases`, then click Publish
 just sync          # copy scripts to ~/.config/gitbeacon/ (then press [r] in bar to reload)
 just lint          # shellcheck all scripts
 just build-notifier  # rebuild the ObjC notifier .app (needed after icon/code changes)
+just build-app       # universal release binary (arm64 + x86_64)
+just package-app     # assemble .app bundle from release build
+just package-dmg     # create distributable DMG
 ```
 
 ## Version Conventions

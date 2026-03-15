@@ -18,6 +18,8 @@ Stay in the hive. macOS-native GitHub notifications with a live terminal bar.
 
 ## macOS Menu Bar App
 
+> **[Download GitBeacon.dmg](https://github.com/joryeugene/gitbeacon/releases/latest)** from GitHub Releases. Open, drag to Applications, launch from Spotlight.
+
 For users who prefer a native app over the terminal, gitbeacon ships as a macOS menu bar app. Download, drag to Applications, double-click. No terminal, no `brew`, no prerequisites beyond `gh auth login`.
 
 The app shows a bell icon in the menu bar. Click it to see a popover with your recent GitHub notification events. The same proven daemon runs underneath. Click any event row to open it in your browser.

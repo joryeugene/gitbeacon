@@ -37,6 +37,18 @@ notify msg:
         echo "✗  no notifier found — opened System Settings > Notifications"
     fi
 
+# Build universal release binary for the macOS menu bar app
+build-app:
+    cd GitBeaconApp && swift build -c release --arch arm64 --arch x86_64
+
+# Package .app bundle from release build
+package-app:
+    cd GitBeaconApp && ./build/package-app.sh release
+
+# Package .dmg for distribution (drag-to-Applications installer)
+package-dmg:
+    cd GitBeaconApp && ./build/package-dmg.sh
+
 # Full install: prereq checks, copy scripts, install CLI wrapper (first-time setup)
 install:
     bash install.sh

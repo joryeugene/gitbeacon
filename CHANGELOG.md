@@ -15,6 +15,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   - Daemon lifecycle management: spawn, adopt existing, health check every 10s, kill on quit
   - Click any event row to open the GitHub URL in the default browser
   - `build/package-app.sh` assembles a proper `.app` bundle with `Info.plist` and ad-hoc codesigning
+  - `build/package-dmg.sh` creates a distributable DMG with drag-to-Applications install
+- justfile recipes: `build-app` (universal binary), `package-app`, `package-dmg`
 - Daemon spawned with Homebrew bash 5 (not `/bin/bash` 3.2) to support associative arrays and `-v` tests used by the daemon script
 
 ---
