@@ -11,6 +11,26 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.1] - 2026-03-17
+
+### Fixed
+- Duplicate PR comment and merge notifications: switched dedup key for `comment`,
+  `pull_request_review`, and `author` reasons from `id|updated_at` to
+  `id|latest_comment_url`. GitHub bumps `updated_at` on any thread activity (CI,
+  commits, metadata), but `latest_comment_url` only changes when new human-written
+  content is posted. Merge fires once; subsequent CI runs on the same PR do not re-fire.
+- App update detection: `installDaemonScript()` now compares SHA-256 instead of file
+  size. Same-size edits are no longer silently skipped; `just sync` updates are no
+  longer reverted on the next app restart.
+
+### Added
+- `just dev-install` recipe: builds a universal binary, packages the `.app`, and
+  installs it to `/Applications` in one command.
+- `just release` now builds a fresh app and DMG before tagging, and installs locally
+  after publishing. No stale bundle can end up in a release.
+
+---
+
 ## [1.1.0] - 2026-03-15
 
 ### Added
@@ -254,7 +274,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/joryeugene/gitbeacon/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/joryeugene/gitbeacon/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/joryeugene/gitbeacon/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/joryeugene/gitbeacon/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/joryeugene/gitbeacon/compare/v0.11.1...v1.0.0
 [0.11.1]: https://github.com/joryeugene/gitbeacon/compare/v0.11.0...v0.11.1

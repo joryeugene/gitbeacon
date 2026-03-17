@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Manages the lifecycle of gitbeacon-daemon.sh.
@@ -218,15 +219,17 @@ final class DaemonManager: ObservableObject {
         let installed = daemonScriptPath
         let fm = FileManager.default
 
+        // Skip if installed script has identical content (SHA-256 match).
+        // Size-comparison was unreliable: same-size edits were silently skipped,
+        // and `just sync` updates with different sizes were reverted on next launch.
         if fm.fileExists(atPath: installed),
-           let bundledAttrs = try? fm.attributesOfItem(atPath: bundledScript),
-           let installedAttrs = try? fm.attributesOfItem(atPath: installed),
-           let bundledSize = bundledAttrs[.size] as? UInt64,
-           let installedSize = installedAttrs[.size] as? UInt64,
-           bundledSize == installedSize {
+           let bundledData = fm.contents(atPath: bundledScript),
+           let installedData = fm.contents(atPath: installed),
+           SHA256.hash(data: bundledData) == SHA256.hash(data: installedData) {
             return
         }
 
+        try? fm.removeItem(atPath: installed)
         try? fm.copyItem(atPath: bundledScript, toPath: installed)
 
         var perms = (try? fm.attributesOfItem(atPath: installed))?[.posixPermissions] as? Int ?? 0o644

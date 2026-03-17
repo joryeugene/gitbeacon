@@ -49,6 +49,16 @@ package-app:
 package-dmg:
     cd GitBeaconApp && ./build/package-dmg.sh
 
+# Build, package, and install the app locally (replaces /Applications/GitBeacon.app)
+# Use after any change to scripts/ or GitBeaconApp/ to get the updated version running
+dev-install:
+    just build-app
+    just package-app
+    @echo "→ Installing to /Applications..."
+    @rm -rf /Applications/GitBeacon.app
+    @cp -R GitBeaconApp/.build/GitBeacon.app /Applications/GitBeacon.app
+    @echo "✓  GitBeacon.app installed — quit and reopen from /Applications"
+
 # Full install: prereq checks, copy scripts, install CLI wrapper (first-time setup)
 install:
     bash install.sh
@@ -180,7 +190,7 @@ build-notifier:
     echo "✓  ${APP_DEST} ready"
     echo "   Check System Settings > Notifications > GitBeacon and set style to Banners."
 
-# Tag and push a release: lints, syncs locally, tags, pushes, creates draft GitHub release
+# Tag and push a release: builds fresh, installs locally, lints, syncs, tags, ships DMG
 # Prereq: CHANGELOG.md already updated for the version; commit all changes first
 # Usage: just release 0.6.0
 release version:
@@ -191,8 +201,15 @@ release version:
         || { echo "✗  [{{version}}] not found in CHANGELOG.md — update it first"; exit 1; }
     echo "→ Linting..."
     just lint
+    echo "→ Building app..."
+    just build-app
+    just package-app
+    just package-dmg
     echo "→ Syncing scripts to ~/.config/gitbeacon/..."
     just sync
+    echo "→ Installing to /Applications..."
+    rm -rf /Applications/GitBeacon.app
+    cp -R GitBeaconApp/.build/GitBeacon.app /Applications/GitBeacon.app
     echo "→ Tagging v{{version}}..."
     git tag -a "v{{version}}" -m "v{{version}}"
     git push origin main "v{{version}}"
@@ -201,3 +218,4 @@ release version:
     gh release create "v{{version}}" --title "v{{version}}" --draft --notes "$NOTES" \
         GitBeaconApp/.build/GitBeacon.dmg
     echo "✓  Draft release ready: https://github.com/joryeugene/gitbeacon/releases"
+    echo "✓  GitBeacon.app installed locally — quit and reopen from /Applications"
