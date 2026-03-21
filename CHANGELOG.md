@@ -11,6 +11,25 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.2] - 2026-03-20
+
+### Fixed
+- Terminal-state dedup: merged/closed PRs and closed issues now log exactly once.
+  New comments on a merged PR change `latest_comment_url`, which passed the primary
+  dedup and re-logged "Merged" on every subsequent comment. A secondary dedup check
+  uses a state-stable key (`id|Merged`, `id|PR closed`, etc.) so the terminal event
+  fires once regardless of later thread activity.
+- `just sync` now also patches the installed app bundle
+  (`/Applications/GitBeacon.app/Contents/Resources/`) so the SHA-256 check in
+  `installDaemonScript()` sees matching content. Previously, synced scripts were
+  silently reverted on the next app launch because the bundle still had the old version.
+
+### Added
+- `tests/test-dedup.sh`: 15 assertions across 7 test groups covering all three dedup
+  tiers plus terminal-state secondary dedup. Run with `bash tests/test-dedup.sh`.
+
+---
+
 ## [1.1.1] - 2026-03-17
 
 ### Fixed
@@ -274,7 +293,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/joryeugene/gitbeacon/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/joryeugene/gitbeacon/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/joryeugene/gitbeacon/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/joryeugene/gitbeacon/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/joryeugene/gitbeacon/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/joryeugene/gitbeacon/compare/v0.11.1...v1.0.0

@@ -7,7 +7,9 @@ default:
 lint:
     shellcheck scripts/gitbeacon-daemon.sh scripts/gitbeacon-bar.sh scripts/demo-scenario.sh install.sh
 
-# Copy scripts to ~/.config/gitbeacon/ — fast dev deploy, no prereq checks
+# Copy scripts to ~/.config/gitbeacon/ (fast dev deploy, no prereq checks)
+# Also patches the installed app bundle so installDaemonScript() SHA-256 check
+# sees matching content and will not revert the sync on next launch.
 # Use after any edit to scripts/; press [r] in the bar to reload
 sync:
     @mkdir -p "${HOME}/.config/gitbeacon"
@@ -15,7 +17,12 @@ sync:
     @cp scripts/gitbeacon-bar.sh    "${HOME}/.config/gitbeacon/gitbeacon-bar.sh"
     @chmod +x "${HOME}/.config/gitbeacon/gitbeacon-daemon.sh" \
               "${HOME}/.config/gitbeacon/gitbeacon-bar.sh"
-    @echo "synced → ~/.config/gitbeacon/  (press [r] in bar to reload)"
+    @if [ -d /Applications/GitBeacon.app/Contents/Resources ]; then \
+        cp scripts/gitbeacon-daemon.sh /Applications/GitBeacon.app/Contents/Resources/gitbeacon-daemon.sh; \
+        echo "synced -> ~/.config/gitbeacon/ + app bundle  (press [r] in bar to reload)"; \
+    else \
+        echo "synced -> ~/.config/gitbeacon/  (press [r] in bar to reload)"; \
+    fi
 
 # Send a test notification with custom text
 # Usage: just notify "your message here"

@@ -392,6 +392,20 @@ process_notification() {
             ;;
     esac
 
+    # Terminal-state dedup: merge/close events are one-shot. A merged PR stays merged,
+    # but new comments keep changing latest_comment_url, which lets the primary dedup
+    # pass. This secondary check uses a state-stable key (id|Merged, id|PR closed, etc.)
+    # so the terminal event logs exactly once regardless of subsequent thread activity.
+    case "$event_label" in
+        Merged|"PR closed"|Closed|"Issue closed")
+            local terminal_key="${id}|${event_label}"
+            if grep -qxF "$terminal_key" "$SEEN_IDS" 2>/dev/null; then
+                return
+            fi
+            printf '%s\n' "$terminal_key" >> "$SEEN_IDS"
+            ;;
+    esac
+
     log_event "$event_icon" "$event_label" "$title" "$repo_name" "$html_url"
     queue_sound "$sound"
     (( BATCH_COUNT++ )) || true
