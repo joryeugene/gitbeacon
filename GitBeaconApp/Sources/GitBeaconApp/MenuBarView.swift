@@ -32,7 +32,7 @@ struct MenuBarView: View {
 
             Spacer()
 
-            Text("\(eventLog.events.count) events")
+            Text("\(eventLog.totalEventCount) events")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -71,7 +71,7 @@ struct MenuBarView: View {
         } else {
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(eventLog.events.suffix(30).reversed()) { event in
+                    ForEach(eventLog.events.suffix(50).reversed()) { event in
                         EventRow(event: event)
                             .onTapGesture {
                                 if let url = event.url {
@@ -82,6 +82,14 @@ struct MenuBarView: View {
                 }
             }
             .frame(maxHeight: 400)
+
+            if eventLog.events.count >= 500 {
+                Text("Showing last 500")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 2)
+            }
         }
     }
 
@@ -130,6 +138,7 @@ struct MenuBarView: View {
         let logPath = "\(home)/.config/gitbeacon/events.log"
         try? "".write(toFile: logPath, atomically: true, encoding: .utf8)
         eventLog.events = []
+        eventLog.totalEventCount = 0
     }
 }
 

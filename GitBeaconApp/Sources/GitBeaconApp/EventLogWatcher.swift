@@ -5,6 +5,7 @@ import Combine
 /// with a Timer fallback for edge cases like file rotation.
 final class EventLogWatcher: ObservableObject {
     @Published var events: [GitBeaconEvent] = []
+    @Published var totalEventCount: Int = 0
 
     private let logPath: String
     private var fileHandle: FileHandle?
@@ -68,9 +69,10 @@ final class EventLogWatcher: ObservableObject {
 
         let newEvents = EventParser.parse(text)
         if !newEvents.isEmpty {
+            totalEventCount += newEvents.count
             events.append(contentsOf: newEvents)
-            if events.count > 100 {
-                events = Array(events.suffix(100))
+            if events.count > 500 {
+                events = Array(events.suffix(500))
             }
         }
     }
@@ -92,8 +94,9 @@ final class EventLogWatcher: ObservableObject {
             return
         }
         events = EventParser.parse(text)
-        if events.count > 100 {
-            events = Array(events.suffix(100))
+        totalEventCount = events.count
+        if events.count > 500 {
+            events = Array(events.suffix(500))
         }
     }
 

@@ -49,9 +49,11 @@ just release X.Y.Z
 This recipe:
 1. Verifies `[X.Y.Z]` exists in `CHANGELOG.md`
 2. Lints all shell scripts with shellcheck
-3. Syncs scripts to `~/.config/gitbeacon/`
-4. Creates and pushes annotated tag `vX.Y.Z`
-5. Extracts the version's CHANGELOG section via `awk` and creates a **draft** GitHub release with those notes
+3. Builds universal binary, packages .app and .dmg
+4. Syncs scripts to `~/.config/gitbeacon/` + app bundle
+5. Installs to `/Applications/GitBeacon.app`
+6. Creates and pushes annotated tag `vX.Y.Z`
+7. Extracts the version's CHANGELOG section via `awk` and creates a **draft** GitHub release with DMG attached
 
 ### 6. Publish the draft
 Review at `https://github.com/joryeugene/gitbeacon/releases`, then click Publish.
@@ -61,12 +63,14 @@ Review at `https://github.com/joryeugene/gitbeacon/releases`, then click Publish
 ## Dev Workflow
 
 ```bash
-just sync          # copy scripts to ~/.config/gitbeacon/ (then press [r] in bar to reload)
-just lint          # shellcheck all scripts
+just sync            # copy scripts to ~/.config/gitbeacon/ + app bundle (then press [r] in bar to reload)
+just lint            # shellcheck all scripts
+just dev-install     # build, package, and install to /Applications (full local rebuild)
 just build-notifier  # rebuild the ObjC notifier .app (needed after icon/code changes)
 just build-app       # universal release binary (arm64 + x86_64)
 just package-app     # assemble .app bundle from release build
 just package-dmg     # create distributable DMG
+bash tests/test-dedup.sh  # run dedup test suite (15 assertions)
 ```
 
 ## Version Conventions
@@ -80,6 +84,10 @@ just package-dmg     # create distributable DMG
 - Event log uses 2-line format (v0.9.0+): `[timestamp] icon LABEL  repo\ttitle` on line 1, `\ttitle` on line 2
 - `grep -c '^\['` counts events (not `wc -l`) to avoid double-counting detail lines
 - `[o]` URL extraction greps for tab-bearing lines (header lines only, not detail lines)
-- Bar displays 16 tail lines = 8 events × 2 lines each
+- Bar displays 16 tail lines = 8 events x 2 lines each (terminal bar only)
+- Menu bar app: 500-event in-memory cap, 50 shown in scroll list, `totalEventCount` tracks running total (resets on Clear)
+- Three-tier dedup: one-shot (bare id), content-update (id|latest_comment_url), terminal-state (id|Merged etc.)
+- `just sync` patches both `~/.config/gitbeacon/` and `/Applications/GitBeacon.app/Contents/Resources/` so the SHA-256 check in `installDaemonScript()` does not revert synced scripts
 - macOS menu bar app spawns daemon with Homebrew bash 5 (not `/bin/bash` 3.2). The daemon uses `declare -A` and `[[ -v ]]` which require bash 4+.
 - `events.log` is the integration contract between daemon and app. The daemon writes, the SwiftUI app reads via kqueue + timer fallback. No IPC, no sockets.
+- Tests: `bash tests/test-dedup.sh` (15 assertions, 7 groups, requires bash 5 + jq)

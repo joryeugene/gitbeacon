@@ -24,7 +24,7 @@ For users who prefer a native app over the terminal, gitbeacon ships as a macOS 
 
 > **First launch:** macOS may warn "unidentified developer." Right-click the app, choose **Open**, then click **Open** in the dialog. This is only needed once.
 
-The app shows a bell icon in the menu bar. Click it to see a popover with your recent GitHub notification events. The same proven daemon runs underneath. Click any event row to open it in your browser.
+The app shows a bell icon in the menu bar. Click it to see a popover with your recent GitHub notification events, a running event counter, and controls for sound and clearing the log. The same proven daemon runs underneath. Click any event row to open it in your browser. The counter tracks total events since your last clear (up to 500 in memory).
 
 <p align="center">
   <img src="assets/menubar.png" alt="GitBeacon menu bar popover" width="380">
@@ -134,7 +134,7 @@ flowchart LR
     end
 
     subgraph classify["Per Notification"]
-        FILTER["dedup: seen-ids\n+ batch repo:title"] --> R{reason}
+        FILTER["dedup: seen-ids\n+ terminal-state guard"] --\> R{reason}
         R -->|"comment / mention\nreview_requested"| TINK["💬 👀  Tink"]
         R -->|assign| PING["📌 Ping"]
         R -->|author → fetch PR| STATE{PR state}
